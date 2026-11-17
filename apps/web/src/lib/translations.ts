@@ -100,7 +100,7 @@ export const translations: Record<SupportedLocale, TranslationDictionary> = {
     },
     hero: {
       badge: "2026/2027 o'quv yili uchun qabul tartibi e'lon qilindi",
-      title: "To'rtko'l ixtisoslashtirilgan maktabi",
+      title: "To'rtko'l tuman ixtisoslashtirilgan maktabi",
       subtitle: "Kelajak yetakchilari va intellektual salohiyatli yoshlar maskani. Chuqurlashtirilgan aniq va tabiiy fanlar ta'limi.",
       applyBtn: 'Ariza topshirish',
       learnMoreBtn: 'Maktab haqida',
@@ -152,7 +152,7 @@ export const translations: Record<SupportedLocale, TranslationDictionary> = {
       guideBtn: 'Qabul tartibi',
     },
     footer: {
-      description: "Qoraqalpog'iston Respublikasi To'rtko'l tumani ixtisoslashtirilgan maktabining rasmiy veb-platformasi.",
+      description: "Qoraqalpog'iston Respublikasi To'rtko'l tuman ixtisoslashtirilgan maktabining rasmiy veb-platformasi.",
       quickLinks: 'Tezkor havolalar',
       contactInfo: 'Aloqa maʼlumotlari',
       address: "To'rtko'l tumani, Mustaqillik ko'chasi",

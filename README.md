@@ -1,6 +1,6 @@
-# To'rtko'l Ixtisoslashtirilgan Maktabi Veb-Platformasi
+# To'rtko'l tuman ixtisoslashtirilgan maktabi Veb-Platformasi
 
-Qoraqalpog'iston Respublikasi, To'rtko'l ixtisoslashtirilgan maktabining zamonaviy, tezkor va ko'p tilli rasmiy veb-platformasi.
+Qoraqalpog'iston Respublikasi, To'rtko'l tuman ixtisoslashtirilgan maktabining zamonaviy, tezkor va ko'p tilli rasmiy veb-platformasi.
 
 ## 🚀 Texnologiyalar
 
@@ -14,18 +14,18 @@ Qoraqalpog'iston Respublikasi, To'rtko'l ixtisoslashtirilgan maktabining zamonav
 
 - **Asosiy sahifa (`/`)**: Redsun uslubidagi horizon glow, Hero interaktiv maktab fotosuratlari slayderi, Bento Grid statistika, Yo'nalishlar, So'nggi yangiliklar, Qabul banneri va Galereya.
 - **Biz haqimizda**:
-  - `/biz-haqimizda/maktab-haqida` — Maktab tarixi, maqsad va qadriyatlari.
-  - `/biz-haqimizda/rahbariyat` — Rahbariyat jamoasi, qabul kunlari va aloqa rekvizitlari.
-  - `/biz-haqimizda/oqituvchilar` — Oliy toifali ustozlar katalogi va fanlar filtri.
-  - `/biz-haqimizda/galereya` — Fotoalbomlar va to'liq ekranli **Lightbox / Image Viewer** (zoom, karusel navigatsiya bilan).
-- **Qabul jarayoni (`/qabul`)**: 4 bosqichli qabul yo'riqnomasi, kvotalar, kerakli hujjatlar va `ariza.piima.uz` ga to'g'ridan-to'g'ri o'tish.
+  - `/about/school` — Maktab tarixi, maqsad va qadriyatlari.
+  - `/about/leaders` — Rahbariyat jamoasi, qabul kunlari va aloqa rekvizitlari.
+  - `/about/teachers` — Oliy toifali ustozlar katalogi va fanlar filtri.
+  - `/about/gallery` — Fotoalbomlar va to'liq ekranli **Lightbox / Image Viewer** (zoom, karusel navigatsiya bilan).
+- **Qabul jarayoni (`/admission`)**: 4 bosqichli qabul yo'riqnomasi, kvotalar, kerakli hujjatlar va `ariza.piima.uz` ga to'g'ridan-to'g'ri o'tish.
 - **Maktab hayoti**:
-  - `/maktab-hayoti/yangiliklar` — Yangiliklar arxivi va alohida ulashiladigan maqola sahifalari (`[slug]`).
-  - `/maktab-hayoti/talim` — Ta'lim metodikasi va zamonaviy laboratoriyalar.
+  - `/news` — Yangiliklar arxivi va alohida ulashiladigan maqola sahifalari (`[slug]`).
+  - `/education` — Ta'lim metodikasi va zamonaviy laboratoriyalar.
 - **Yo'nalishlar**:
-  - `/yonalishlar/aniq-fanlar` — Matematika, Fizika, IT o'quv dasturi.
-  - `/yonalishlar/tabiiy-fanlar` — Kimyo, Biologiya laboratoriyalari va tibbiyotga yo'naltirilgan dastur.
-- **Bog'lanish (`/boglanish`)**: Rasmiy manzil, xarita koordinatasi va real vaqtda bazaga yoziluvchi onlayn murojaat formasi.
+  - `/programs/exact` — Matematika, Fizika, IT o'quv dasturi.
+  - `/programs/natural` — Kimyo, Biologiya laboratoriyalari va tibbiyotga yo'naltirilgan dastur.
+- **Bog'lanish (`/contact`)**: Rasmiy manzil, xarita koordinatasi va real vaqtda bazaga yoziluvchi onlayn murojaat formasi.
 - **Admin panel (`/admin`)**: Yagona admin boshqaruvi. Yangilik va postlar faqat o'zbek tilida kiritiladi, qolgan 3 ta tilga fonda avtomatik tarjima qilinadi.
 
 ## 🛠️ O'rnatish va Ishga Tushirish

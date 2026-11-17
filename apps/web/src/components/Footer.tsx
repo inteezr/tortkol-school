@@ -3,10 +3,10 @@
 import React from 'react';
 import Link from 'next/link';
 import { useLanguage } from '../lib/LanguageContext';
-import { MapPin, Phone, Mail, Clock, School, ArrowUpRight } from 'lucide-react';
+import { MapPin, Phone, Mail, Clock, School, ArrowUpRight, Send, Instagram, Facebook, Youtube } from 'lucide-react';
 
 export const Footer: React.FC = () => {
-  const { t } = useLanguage();
+  const { t, tr } = useLanguage();
 
   return (
     <footer className="bg-gradient-to-b from-[#0A2240] via-[#071930] to-[#030D1B] text-slate-200 pt-16 pb-10 font-poppins border-t border-sky-500/20">
@@ -20,16 +20,13 @@ export const Footer: React.FC = () => {
               </div>
               <div>
                 <div className="font-extrabold text-white text-base leading-tight">
-                  To‘rtko‘l Maktabi
-                </div>
-                <div className="text-[11px] text-[#38BDF8] font-bold uppercase tracking-wider mt-0.5">
-                  Ixtisoslashtirilgan taʼlim
+                  To‘rtko‘l TIM
                 </div>
               </div>
             </div>
 
             <p className="text-xs text-slate-300 leading-relaxed mb-6 font-normal">
-              Ixtisoslashtirilgan ta’lim muassasalari agentligi tizimidagi fundamental va zamonaviy davlat ta'lim maskani.
+              {tr("Ixtisoslashtirilgan ta'lim muassasalari agentligi tizimidagi To‘rtko‘l tuman ixtisoslashtirilgan maktabi — fundamental va zamonaviy davlat ta'lim maskani.")}
             </p>
 
             {/* Ijtimoiy tarmoqlar */}
@@ -39,9 +36,9 @@ export const Footer: React.FC = () => {
                 target="_blank" 
                 rel="noreferrer" 
                 className="w-8 h-8 rounded-full bg-white/10 hover:bg-[#38BDF8] hover:text-[#0A2240] flex items-center justify-center text-xs font-bold transition-all"
-                title="Telegram"
+                title={tr("Telegram")}
               >
-                TG
+                <Send className="w-4 h-4" />
               </a>
               <a 
                 href="https://instagram.com" 
@@ -50,7 +47,7 @@ export const Footer: React.FC = () => {
                 className="w-8 h-8 rounded-full bg-white/10 hover:bg-[#38BDF8] hover:text-[#0A2240] flex items-center justify-center text-xs font-bold transition-all"
                 title="Instagram"
               >
-                IG
+                <Instagram className="w-4 h-4" />
               </a>
               <a 
                 href="https://facebook.com" 
@@ -59,7 +56,7 @@ export const Footer: React.FC = () => {
                 className="w-8 h-8 rounded-full bg-white/10 hover:bg-[#38BDF8] hover:text-[#0A2240] flex items-center justify-center text-xs font-bold transition-all"
                 title="Facebook"
               >
-                FB
+                <Facebook className="w-4 h-4" />
               </a>
               <a 
                 href="https://youtube.com" 
@@ -68,7 +65,7 @@ export const Footer: React.FC = () => {
                 className="w-8 h-8 rounded-full bg-white/10 hover:bg-[#38BDF8] hover:text-[#0A2240] flex items-center justify-center text-xs font-bold transition-all"
                 title="YouTube"
               >
-                YT
+                <Youtube className="w-4 h-4" />
               </a>
             </div>
           </div>
@@ -76,27 +73,27 @@ export const Footer: React.FC = () => {
           {/* 2. Biz haqimizda */}
           <div>
             <h4 className="font-bold text-white text-sm uppercase tracking-wider mb-5 border-l-2 border-[#38BDF8] pl-2.5">
-              Biz haqimizda
+              {tr("Biz haqimizda")}
             </h4>
             <ul className="space-y-3 text-xs text-slate-300">
               <li>
-                <Link href="/biz-haqimizda/maktab-haqida" className="hover:text-[#38BDF8] transition-colors">
-                  Maktab haqida umumiy ma'lumot
+                <Link href="/about/school" className="hover:text-[#38BDF8] transition-colors">
+                  {tr("Maktab haqida umumiy ma'lumot")}
                 </Link>
               </li>
               <li>
-                <Link href="/biz-haqimizda/rahbariyat" className="hover:text-[#38BDF8] transition-colors">
-                  Maktab rahbariyati
+                <Link href="/about/leaders" className="hover:text-[#38BDF8] transition-colors">
+                  {tr("Maktab rahbariyati")}
                 </Link>
               </li>
               <li>
-                <Link href="/biz-haqimizda/oqituvchilar" className="hover:text-[#38BDF8] transition-colors">
-                  O‘qituvchilar tarkibi
+                <Link href="/about/teachers" className="hover:text-[#38BDF8] transition-colors">
+                  {tr("O'qituvchilar tarkibi")}
                 </Link>
               </li>
               <li>
-                <Link href="/biz-haqimizda/galereya" className="hover:text-[#38BDF8] transition-colors">
-                  Fotogalereya va media
+                <Link href="/about/gallery" className="hover:text-[#38BDF8] transition-colors">
+                  {tr("Fotogalereya va media")}
                 </Link>
               </li>
             </ul>
@@ -105,32 +102,32 @@ export const Footer: React.FC = () => {
           {/* 3. Ta'lim va Yo'nalishlar */}
           <div>
             <h4 className="font-bold text-white text-sm uppercase tracking-wider mb-5 border-l-2 border-[#38BDF8] pl-2.5">
-              Taʼlim va Qabul
+              {tr("Ta'lim va Qabul")}
             </h4>
             <ul className="space-y-3 text-xs text-slate-300">
               <li>
-                <Link href="/yonalishlar/aniq-fanlar" className="hover:text-[#38BDF8] transition-colors">
-                  Aniq fanlar yo‘nalishi
+                <Link href="/programs/exact" className="hover:text-[#38BDF8] transition-colors">
+                  {tr("Aniq fanlar yo'nalishi")}
                 </Link>
               </li>
               <li>
-                <Link href="/yonalishlar/tabiiy-fanlar" className="hover:text-[#38BDF8] transition-colors">
-                  Tabiiy fanlar yo‘nalishi
+                <Link href="/programs/natural" className="hover:text-[#38BDF8] transition-colors">
+                  {tr("Tabiiy fanlar yo'nalishi")}
                 </Link>
               </li>
               <li>
-                <Link href="/maktab-hayoti/talim" className="hover:text-[#38BDF8] transition-colors">
-                  O‘quv dasturlari va metodika
+                <Link href="/education" className="hover:text-[#38BDF8] transition-colors">
+                  {tr("O'quv dasturlari va metodika")}
                 </Link>
               </li>
               <li>
-                <Link href="/qabul" className="hover:text-[#38BDF8] transition-colors">
-                  Qabul talablari va bosqichlari
+                <Link href="/admission" className="hover:text-[#38BDF8] transition-colors">
+                  {tr("Qabul talablari va bosqichlari")}
                 </Link>
               </li>
               <li>
-                <Link href="/maktab-hayoti/yangiliklar" className="hover:text-[#38BDF8] transition-colors">
-                  So‘nggi yangiliklar va e'lonlar
+                <Link href="/news" className="hover:text-[#38BDF8] transition-colors">
+                  {tr("So'nggi yangiliklar va e'lonlar")}
                 </Link>
               </li>
             </ul>
@@ -139,12 +136,12 @@ export const Footer: React.FC = () => {
           {/* 4. Bog'lanish va Rekvizitlar */}
           <div>
             <h4 className="font-bold text-white text-sm uppercase tracking-wider mb-5 border-l-2 border-[#38BDF8] pl-2.5">
-              Aloqa rekvizitlari
+              {tr("Aloqa rekvizitlari")}
             </h4>
             <div className="space-y-3.5 text-xs text-slate-300">
               <div className="flex items-start gap-2.5">
                 <MapPin className="w-4 h-4 text-[#38BDF8] flex-shrink-0 mt-0.5" />
-                <span>Qoraqalpog‘iston Resp., To‘rtko‘l tumani, Beruniy ko‘chasi, 1-uy</span>
+                <span>{tr("Qoraqalpog'iston Resp., To'rtko'l tumani, Beruniy ko'chasi, 1-uy")}</span>
               </div>
               <div className="flex items-center gap-2.5">
                 <Phone className="w-4 h-4 text-[#38BDF8] flex-shrink-0" />
@@ -156,7 +153,7 @@ export const Footer: React.FC = () => {
               </div>
               <div className="flex items-center gap-2.5">
                 <Clock className="w-4 h-4 text-[#38BDF8] flex-shrink-0" />
-                <span>Dushanba - Shanba: 08:00 - 17:00</span>
+                <span>{tr("Dushanba - Shanba: 08:00 - 17:00")}</span>
               </div>
             </div>
           </div>
@@ -165,7 +162,7 @@ export const Footer: React.FC = () => {
         {/* Mualliflik va Foydali portallar havolasi */}
         <div className="mt-8 flex flex-col md:flex-row items-center justify-between text-xs text-slate-400 gap-4">
           <div>
-            © {new Date().getFullYear()} To‘rtko‘l ixtisoslashtirilgan maktabi. Barcha huquqlar himoyalangan.
+            © {new Date().getFullYear()} To‘rtko‘l tuman ixtisoslashtirilgan maktabi. Barcha huquqlar himoyalangan.
           </div>
 
           <div className="flex items-center gap-6">

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useLanguage } from '../lib/LanguageContext';
 import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Download } from 'lucide-react';
 
 export interface ViewerImage {
@@ -24,6 +25,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
   onClose,
   onIndexChange,
 }) => {
+  const { tr } = useLanguage();
   const [zoom, setZoom] = useState(1);
 
   useEffect(() => {
@@ -98,7 +100,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
           <button
             onClick={toggleZoom}
             className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 transition-all text-white"
-            title="Kattalashtirish"
+            title={tr("Kattalashtirish")}
           >
             {zoom === 1 ? <ZoomIn className="w-5 h-5" /> : <ZoomOut className="w-5 h-5" />}
           </button>
@@ -107,7 +109,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
           <button
             onClick={onClose}
             className="p-2.5 rounded-full bg-white/15 hover:bg-red-600 active:scale-95 transition-all text-white"
-            title="Yopish (Esc)"
+            title={tr("Yopish (Esc)")}
           >
             <X className="w-5 h-5" />
           </button>
@@ -120,7 +122,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
           <button
             onClick={handlePrev}
             className="absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/25 active:scale-90 text-white backdrop-blur-md border border-white/15 transition-all z-20"
-            aria-label="Oldingi rasm"
+            aria-label={tr("Oldingi rasm")}
           >
             <ChevronLeft className="w-6 h-6" />
           </button>
@@ -128,7 +130,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
           <button
             onClick={handleNext}
             className="absolute right-4 sm:right-6 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/25 active:scale-90 text-white backdrop-blur-md border border-white/15 transition-all z-20"
-            aria-label="Keyingi rasm"
+            aria-label={tr("Keyingi rasm")}
           >
             <ChevronRight className="w-6 h-6" />
           </button>
@@ -140,7 +142,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
         onClick={(e) => e.stopPropagation()}
         className="relative max-w-5xl max-h-[82vh] p-2 sm:p-4 flex flex-col items-center justify-center"
       >
-        <img
+        <img loading="lazy" decoding="async"
           src={currentImage.url}
           alt={currentImage.title || 'Preview'}
           style={{ transform: `scale(${zoom})` }}

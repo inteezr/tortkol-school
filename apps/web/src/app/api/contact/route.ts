@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { z } from 'zod';
+import { getDb } from '@/lib/db';
+import { getAdmin } from '@/lib/admin-auth';
 
 const contactSchema = z.object({
   fullName: z.string().min(3, "Ism-familiya kamida 3 belgidan iborat bo'lishi kerak"),
@@ -9,52 +11,15 @@ const contactSchema = z.object({
   message: z.string().min(5, "Xabar matni kamida 5 belgidan iborat bo'lishi kerak"),
 });
 
-let inMemoryMessages = [
-  {
-    id: 1,
-    full_name: 'Azamat Yusupov',
-    phone: '+998 (90) 123-45-67',
-    subject: '7-sinfga qabul sanalari',
-    message: "Assalomu alaykum! O'g'lim 6-sinfni a'lo baholarga tamomlayapti. 2026-yilgi qabul imtihonlari qaysi sanalarda o'tkaziladi va qanday hujjatlar talab etiladi?",
-    status: 'new',
-    created_at: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
-  },
-  {
-    id: 2,
-    full_name: 'Dilnoza Karimova',
-    phone: '+998 (91) 456-78-90',
-    subject: "Matematika va Ingliz tili to'garaklari",
-    message: "Assalomu alaykum, maktabda darsdan tashqari xalqaro fan olimpiadalariga tayyorgarlik to'garaklari mavjudmi? Qatnashish shartlari qanday?",
-    status: 'read',
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(),
-  },
-  {
-    id: 3,
-    full_name: 'Bobur Mansurov',
-    phone: '+998 (97) 789-01-23',
-    subject: "Yotoqxona va stipendiya shartlari",
-    message: "To'rtko'l tumani chekka hududidan keladigan o'quvchilar uchun yotoqxona va issiq ovqat ta'minoti qanday yo'lga qo'yilgan?",
-    status: 'new',
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-  },
-];
-
 export async function GET() {
+  if (!(await getAdmin())) return NextResponse.json({ messages: [], error: 'Ruxsat yo\'q' }, { status: 401 });
   try {
-    if (isSupabaseConfigured && supabase) {
-      const { data, error } = await supabase
-        .from('contact_messages')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (!error && data && data.length > 0) {
-        return NextResponse.json({ messages: data });
-      }
-    }
-
-    return NextResponse.json({ messages: inMemoryMessages });
+    const db = getDb();
+    if (!db) return NextResponse.json({ messages: [], error: 'DATABASE_URL sozlanmagan' }, { status: 503 });
+    const rows = await db`select * from contact_messages order by created_at desc`;
+    return NextResponse.json({ messages: rows }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (err: any) {
-    return NextResponse.json({ messages: inMemoryMessages, error: err.message }, { status: 500 });
+    return NextResponse.json({ messages: [], error: err.message }, { status: 500 });
   }
 }
 
@@ -62,16 +27,6 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const validated = contactSchema.parse(body);
-
-    const newMsg = {
-      id: Date.now(),
-      full_name: validated.fullName,
-      phone: validated.phone,
-      subject: validated.subject,
-      message: validated.message,
-      status: 'new',
-      created_at: new Date().toISOString(),
-    };
 
     if (isSupabaseConfigured && supabase) {
       const { error } = await supabase.from('contact_messages').insert({
@@ -84,10 +39,11 @@ export async function POST(req: NextRequest) {
 
       if (error) {
         console.error('Supabase contact insert error:', error);
+        return NextResponse.json({ error: 'Murojaatni saqlab bo\'lmadi' }, { status: 500 });
       }
+    } else {
+      return NextResponse.json({ error: 'Ma\'lumotlar bazasi ulanmagan' }, { status: 503 });
     }
-
-    inMemoryMessages.unshift(newMsg);
 
     return NextResponse.json({ 
       success: true, 
@@ -102,20 +58,15 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  if (!(await getAdmin())) return NextResponse.json({ error: 'Ruxsat yo\'q' }, { status: 401 });
   try {
-    const body = await req.json();
-    const { id, status } = body;
-
-    if (!id || !status) {
-      return NextResponse.json({ error: 'ID va status talab qilinadi' }, { status: 400 });
+    const { id, status } = await req.json();
+    if (!id || !['new', 'read', 'archived'].includes(status)) {
+      return NextResponse.json({ error: 'ID va to\'g\'ri status talab qilinadi' }, { status: 400 });
     }
-
-    if (isSupabaseConfigured && supabase) {
-      await supabase.from('contact_messages').update({ status }).eq('id', id);
-    }
-
-    inMemoryMessages = inMemoryMessages.map((m) => (m.id === id ? { ...m, status } : m));
-
+    const db = getDb();
+    if (!db) return NextResponse.json({ error: 'DATABASE_URL sozlanmagan' }, { status: 503 });
+    await db`update contact_messages set status = ${status} where id = ${id}`;
     return NextResponse.json({ success: true, message: 'Status yangilandi' });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || 'Server xatoligi' }, { status: 500 });

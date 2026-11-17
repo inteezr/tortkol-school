@@ -3,13 +3,13 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useToast } from '../../../lib/ToastContext';
 import { 
   Lock, 
   User, 
   Eye, 
   EyeOff, 
   ArrowLeft, 
-  AlertCircle, 
   School,
   Globe,
   ShieldCheck
@@ -17,16 +17,14 @@ import {
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const [authMethod, setAuthMethod] = useState<'password' | 'oneid'>('password');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
+  const toast = useToast();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMsg('');
     setLoading(true);
 
     try {
@@ -43,14 +41,14 @@ export default function AdminLoginPage() {
 
       router.push('/admin');
     } catch (err: any) {
-      setErrorMsg(err.message || 'Tizimga kirishda xatolik yuz berdi');
+      toast.error(err.message || 'Tizimga kirishda xatolik yuz berdi');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col justify-between items-center bg-[#F5F7FB] font-poppins p-4 sm:p-6 lg:p-8 relative">
+    <div className="h-dvh w-full overflow-hidden flex flex-col justify-between items-center bg-[#F5F7FB] font-poppins p-4 sm:p-6 lg:p-8 relative">
       {/* Yuqori qism: Orqaga qaytish va Til ko'rsatkichi */}
       <div className="w-full max-w-md flex items-center justify-between pt-2 sm:pt-4">
         <Link
@@ -68,8 +66,8 @@ export default function AdminLoginPage() {
       </div>
 
       {/* Markaziy Login Kartasi */}
-      <div className="w-full max-w-md my-auto py-8">
-        <div className="bg-white rounded-3xl p-8 sm:p-10 shadow-xl border border-gray-100 relative">
+      <div className="w-full max-w-md my-auto py-2">
+        <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-gray-100 relative">
           {/* Maktab logosi va nomi */}
           <div className="flex items-center gap-3.5 mb-6">
             <div className="w-12 h-12 rounded-2xl bg-[#0047AB] text-white flex items-center justify-center font-bold shadow-md shadow-blue-500/20 flex-shrink-0">
@@ -77,7 +75,7 @@ export default function AdminLoginPage() {
             </div>
             <div>
               <div className="font-extrabold text-sm sm:text-base text-[#1C1E26] leading-tight">
-                To‘rtko‘l Maktabi
+                To‘rtko‘l tuman ixtisoslashtirilgan maktabi
               </div>
               <div className="text-[11px] font-semibold text-[#0047AB] uppercase tracking-wider mt-0.5">
                 PIIMA Agentligi Tizimida
@@ -92,42 +90,7 @@ export default function AdminLoginPage() {
             Maktab boshqaruv tizimiga kirish uchun maʼlumotlaringizni kiriting.
           </p>
 
-          {/* Autentifikatsiya usuli switcheri (Kirish / OneID) */}
-          <div className="mt-6 p-1 bg-[#EEF3FF] rounded-xl flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => setAuthMethod('password')}
-              className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
-                authMethod === 'password'
-                  ? 'bg-white text-[#0047AB] shadow-sm font-bold'
-                  : 'text-gray-500 hover:text-gray-800'
-              }`}
-            >
-              Kirish
-            </button>
-            <button
-              type="button"
-              onClick={() => setAuthMethod('oneid')}
-              className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
-                authMethod === 'oneid'
-                  ? 'bg-white text-[#0047AB] shadow-sm font-bold'
-                  : 'text-gray-500 hover:text-gray-800'
-              }`}
-            >
-              OneID
-            </button>
-          </div>
-
-          {/* Xatolik xabari */}
-          {errorMsg && (
-            <div className="mt-5 p-3.5 rounded-xl bg-red-50 border border-red-200 text-xs text-red-600 flex items-center gap-2.5 animate-in fade-in">
-              <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-500" />
-              <span>{errorMsg}</span>
-            </div>
-          )}
-
           {/* Login va Parol Formasi */}
-          {authMethod === 'password' ? (
             <form onSubmit={handleLogin} className="mt-6 space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1.5">
@@ -182,28 +145,6 @@ export default function AdminLoginPage() {
                 {loading ? 'Tekshirilmoqda...' : 'Tizimga kirish'}
               </button>
             </form>
-          ) : (
-            /* OneID Tanlovi */
-            <div className="mt-6 p-6 rounded-2xl bg-[#EEF3FF] border border-blue-100 text-center space-y-4">
-              <div className="w-12 h-12 rounded-xl bg-blue-100 text-[#0047AB] flex items-center justify-center mx-auto font-bold text-lg">
-                ID
-              </div>
-              <div>
-                <h4 className="font-bold text-[#1C1E26] text-sm">Yagona identifikatsiya tizimi (OneID)</h4>
-                <p className="text-xs text-gray-500 mt-1">
-                  Davlat xizmatlari portali orqali tezkor va xavfsiz avtorizatsiya.
-                </p>
-              </div>
-              <a
-                href="https://sso.egov.uz"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center justify-center w-full py-2.5 rounded-xl bg-[#0047AB] hover:bg-blue-900 text-white font-semibold text-xs transition-colors"
-              >
-                OneID orqali kirish ↗
-              </a>
-            </div>
-          )}
 
           <div className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-center gap-1.5 text-[11px] text-gray-400">
             <ShieldCheck className="w-3.5 h-3.5 text-[#0047AB]" />
@@ -214,7 +155,7 @@ export default function AdminLoginPage() {
 
       {/* Pastki mualliflik qismi */}
       <div className="w-full max-w-md text-center pb-2 sm:pb-4 text-xs text-gray-400">
-        © {new Date().getFullYear()} PIIMA — To‘rtko‘l ixtisoslashtirilgan maktabi
+        © {new Date().getFullYear()} PIIMA — To‘rtko‘l tuman ixtisoslashtirilgan maktabi
       </div>
     </div>
   );

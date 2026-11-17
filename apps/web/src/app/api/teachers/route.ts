@@ -1,121 +1,130 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { unstable_cache, revalidateTag } from 'next/cache';
+import { z } from 'zod';
+import { getDb } from '@/lib/db';
+import { getAdmin } from '@/lib/admin-auth';
 
-const fallbackLeaders = [
-  {
-    id: 1,
-    full_name: "Ismailov Fazliddin Baxriddinovich",
-    role: "Maktab direktori",
-    reception_days: "Dushanba - Chorshanba, 14:00 - 17:00",
-    phone: "+998 (61) 512-24-40",
-    email: "direktor@tortkol-maktab.uz",
-    bio: "Fizika-matematika fanlari nomzodi, 15 yillik ta’lim boshqaruvi va pedagogik tajribaga ega rahbar.",
-    photo_url: "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=600&q=80",
+const fetchRows = unstable_cache(
+  async (key: string) => {
+    const { data, error } = await supabase!.from(key).select('*').order('sort_order', { ascending: true });
+    return { data: data || [], error: error?.message ?? null };
   },
-  {
-    id: 2,
-    full_name: "Utepov Sanjar Shamuratovich",
-    role: "O‘quv ishlari bo‘yicha direktor o‘rinbosari",
-    reception_days: "Seshanba - Payshanba, 10:00 - 13:00",
-    phone: "+998 (61) 512-24-41",
-    email: "oquv@tortkol-maktab.uz",
-    bio: "Oliy toifali o‘qituvchi, chuqurlashtirilgan davlat ta’lim standartlari koordinatori.",
-    photo_url: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=600&q=80",
-  },
-  {
-    id: 3,
-    full_name: "Davidova Dilrabo Tajibayevna",
-    role: "Ixtisos fanlar bo‘yicha direktor o‘rinbosari",
-    reception_days: "Chorshanba - Juma, 14:00 - 16:00",
-    phone: "+998 (61) 512-24-42",
-    email: "ixtisos@tortkol-maktab.uz",
-    bio: "Biologiya va kimyo fanlari bo‘yicha xalqaro metodist, laboratoriya mudiri.",
-    photo_url: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80",
-  },
-  {
-    id: 4,
-    full_name: "Odiljonov Ulug‘bek Komiljonovich",
-    role: "Ma’naviy-ma’rifiy ishlar bo‘yicha direktor o‘rinbosari",
-    reception_days: "Har kuni, 09:00 - 12:00",
-    phone: "+998 (61) 512-24-43",
-    email: "manaviyat@tortkol-maktab.uz",
-    bio: "Yoshlar tarbiyasi, vatanparvarlik va madaniy-ma’rifiy loyihalar koordinatori.",
-    photo_url: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=600&q=80",
-  },
-];
+  ['staff'],
+  { revalidate: 300, tags: ['staff'] }
+);
 
-const fallbackTeachers = [
-  {
-    id: 1,
-    full_name: "Allamuratov Timur Karimovich",
-    photo_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=500&q=80",
-    category: "Oliy toifali o‘qituvchi",
-    bio: "12 yillik tajriba. Respublika matematika olimpiadasi g‘oliblari ustozi.",
-    subjects: ["Matematika", "Mantiq"],
-  },
-  {
-    id: 2,
-    full_name: "Jumaniyazova Malika Baxtiyarovna",
-    photo_url: "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=500&q=80",
-    category: "1-toifali mutaxassis",
-    bio: "Xalqaro ilmiy tadqiqotlar va fizik laboratoriyalar kuratori.",
-    subjects: ["Fizika", "Astronomiya"],
-  },
-  {
-    id: 3,
-    full_name: "Karimov Eldor Rustamovich",
-    photo_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=500&q=80",
-    category: "Oliy toifali o‘qituvchi",
-    bio: "Xalqaro kimyo olimpiadasi sovrindori va murabbiyi.",
-    subjects: ["Kimyo"],
-  },
-  {
-    id: 4,
-    full_name: "Sodiqova Nilufar Shuhratovna",
-    photo_url: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=500&q=80",
-    category: "1-toifali mutaxassis",
-    bio: "Biologiya va genetik amaliyot darslari rahbari.",
-    subjects: ["Biologiya"],
-  },
-  {
-    id: 5,
-    full_name: "Xolmatov Diyor Mahmudovich",
-    photo_url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=500&q=80",
-    category: "Yetakchi mutaxassis",
-    bio: "Python, Algoritmlar va Robototexnika to‘garagi rahbari.",
-    subjects: ["Informatika", "Robototexnika"],
-  },
-  {
-    id: 6,
-    full_name: "Madaminova Zarina Ilhomovna",
-    photo_url: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&w=500&q=80",
-    category: "Xalqaro toifali (IELTS 8.5)",
-    bio: "CEFR va xalqaro til imtihonlariga tayyorlash bo‘yicha yetakchi ekspert.",
-    subjects: ["Ingliz tili"],
-  },
-];
+const CACHE = { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600' };
 
 export async function GET(req: NextRequest) {
-  try {
-    const { searchParams } = new URL(req.url);
-    const scope = searchParams.get('scope'); // 'leaders' | 'teachers'
+  const scope = new URL(req.url).searchParams.get('scope'); // 'leaders' | 'teachers'
+  const key = scope === 'leaders' ? 'leaders' : 'teachers';
 
-    if (isSupabaseConfigured && supabase) {
-      if (scope === 'leaders') {
-        const { data } = await supabase.from('leaders').select('*').order('sort_order', { ascending: true });
-        return NextResponse.json({ leaders: data || fallbackLeaders });
-      }
-
-      const { data: teachersData } = await supabase.from('teachers').select('*').order('sort_order', { ascending: true });
-      return NextResponse.json({ teachers: teachersData || fallbackTeachers });
-    }
-
-    if (scope === 'leaders') {
-      return NextResponse.json({ leaders: fallbackLeaders, isLiveDatabase: false });
-    }
-
-    return NextResponse.json({ teachers: fallbackTeachers, isLiveDatabase: false });
-  } catch (err) {
-    return NextResponse.json({ leaders: fallbackLeaders, teachers: fallbackTeachers }, { status: 500 });
+  if (!isSupabaseConfigured || !supabase) {
+    return NextResponse.json({ [key]: [], isLiveDatabase: false }, { headers: CACHE });
   }
+
+  const { data, error } = await fetchRows(key);
+
+  if (error) {
+    console.error(`Supabase ${key} fetch error:`, error);
+    return NextResponse.json({ [key]: [], error }, { status: 500 });
+  }
+  return NextResponse.json({ [key]: data || [] }, { headers: CACHE });
+}
+
+const opt = (max: number) => z.string().trim().max(max).optional().transform(v => v || '');
+const teacherSchema = z.object({
+  full_name: z.string().trim().min(3, 'Ism-familiya kamida 3 belgi').max(150),
+  subject: z.string().trim().min(2, 'Fanni kiriting').max(150),
+  category: opt(100),
+  experience: opt(50),
+  bio: opt(1000),
+  education: opt(2000),
+  achievements: opt(3000),
+  photo_url: opt(500),
+});
+const leaderSchema = z.object({
+  full_name: z.string().trim().min(3, 'Ism-familiya kamida 3 belgi').max(150),
+  role: z.string().trim().min(2, 'Lavozimni kiriting').max(150),
+  reception_days: z.string().trim().min(2, 'Qabul kunlarini kiriting').max(255),
+  phone: opt(50),
+  email: opt(100),
+  bio: opt(2000),
+  photo_url: opt(500),
+});
+
+async function guard(req: NextRequest) {
+  if (!(await getAdmin())) return { err: NextResponse.json({ error: "Ruxsat yo'q" }, { status: 401 }) };
+  const db = getDb();
+  if (!db) return { err: NextResponse.json({ error: 'DATABASE_URL sozlanmagan' }, { status: 503 }) };
+  const scope = new URL(req.url).searchParams.get('scope') === 'leaders' ? 'leaders' : 'teachers';
+  return { db, scope: scope as 'leaders' | 'teachers' };
+}
+const fail = (e: any) =>
+  e instanceof z.ZodError
+    ? NextResponse.json({ error: e.errors[0]?.message || "Ma'lumotlar noto'g'ri" }, { status: 400 })
+    : NextResponse.json({ error: e.message || 'Server xatoligi' }, { status: 500 });
+
+// Yaratish: POST /api/teachers?scope=teachers|leaders
+export async function POST(req: NextRequest) {
+  const g = await guard(req);
+  if ('err' in g) return g.err;
+  try {
+    const body = await req.json();
+    let row;
+    if (g.scope === 'teachers') {
+      const v = teacherSchema.parse(body);
+      [row] = await g.db`insert into teachers (full_name, subject, category, experience, bio, education, achievements, photo_url, sort_order)
+        values (${v.full_name}, ${v.subject}, ${v.category}, ${v.experience}, ${v.bio}, ${v.education}, ${v.achievements}, ${v.photo_url},
+          (select coalesce(max(sort_order), 0) + 1 from teachers)) returning *`;
+    } else {
+      const v = leaderSchema.parse(body);
+      [row] = await g.db`insert into leaders (full_name, role, reception_days, phone, email, bio, photo_url, sort_order)
+        values (${v.full_name}, ${v.role}, ${v.reception_days}, ${v.phone || null}, ${v.email || null}, ${v.bio}, ${v.photo_url},
+          (select coalesce(max(sort_order), 0) + 1 from leaders)) returning *`;
+    }
+    revalidateTag('staff');
+    return NextResponse.json({ success: true, item: row });
+  } catch (e) { return fail(e); }
+}
+
+// Tahrirlash: PUT /api/teachers?scope=...&id=N
+export async function PUT(req: NextRequest) {
+  const g = await guard(req);
+  if ('err' in g) return g.err;
+  try {
+    const id = Number(new URL(req.url).searchParams.get('id'));
+    if (!id) return NextResponse.json({ error: 'ID talab qilinadi' }, { status: 400 });
+    const body = await req.json();
+    let row;
+    if (g.scope === 'teachers') {
+      const v = teacherSchema.parse(body);
+      [row] = await g.db`update teachers set full_name=${v.full_name}, subject=${v.subject}, category=${v.category}, experience=${v.experience},
+        bio=${v.bio}, education=${v.education}, achievements=${v.achievements}, photo_url=${v.photo_url}, updated_at=now()
+        where id=${id} returning *`;
+    } else {
+      const v = leaderSchema.parse(body);
+      [row] = await g.db`update leaders set full_name=${v.full_name}, role=${v.role}, reception_days=${v.reception_days}, phone=${v.phone || null},
+        email=${v.email || null}, bio=${v.bio}, photo_url=${v.photo_url}, updated_at=now()
+        where id=${id} returning *`;
+    }
+    if (!row) return NextResponse.json({ error: 'Topilmadi' }, { status: 404 });
+    revalidateTag('staff');
+    return NextResponse.json({ success: true, item: row });
+  } catch (e) { return fail(e); }
+}
+
+// O'chirish: DELETE /api/teachers?scope=...&id=N
+export async function DELETE(req: NextRequest) {
+  const g = await guard(req);
+  if ('err' in g) return g.err;
+  try {
+    const id = Number(new URL(req.url).searchParams.get('id'));
+    if (!id) return NextResponse.json({ error: 'ID talab qilinadi' }, { status: 400 });
+    if (g.scope === 'teachers') await g.db`delete from teachers where id=${id}`;
+    else await g.db`delete from leaders where id=${id}`;
+    revalidateTag('staff');
+    return NextResponse.json({ success: true });
+  } catch (e) { return fail(e); }
 }

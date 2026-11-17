@@ -6,6 +6,9 @@ import { useLanguage } from '../lib/LanguageContext';
 import { SupportedLocale } from '@school/shared';
 import { 
   ChevronDown, 
+  Instagram,
+  Facebook,
+  Youtube,
   Globe, 
   Menu, 
   X, 
@@ -19,7 +22,7 @@ import {
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
-  const { locale, setLocale, t } = useLanguage();
+  const { locale, setLocale, t, tr } = useLanguage();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [lifeOpen, setLifeOpen] = useState(false);
@@ -50,7 +53,7 @@ export const Navbar: React.FC = () => {
             </a>
             <div className="flex items-center gap-2 text-sky-100 hidden lg:flex">
               <Clock className="w-3.5 h-3.5 text-sky-200" />
-              <span>Dush - Shan: 08:00 - 17:00</span>
+              <span>{tr("Dush - Shan: 08:00 - 17:00")}</span>
             </div>
           </div>
 
@@ -62,9 +65,9 @@ export const Navbar: React.FC = () => {
                 target="_blank" 
                 rel="noreferrer" 
                 className="w-6 h-6 rounded-full border border-white/30 hover:border-white hover:bg-white/20 flex items-center justify-center text-[10px] text-white font-bold transition-all"
-                title="Telegram"
+                title={tr("Telegram")}
               >
-                TG
+                <Send className="w-3 h-3" />
               </a>
               <a 
                 href="https://instagram.com" 
@@ -73,7 +76,7 @@ export const Navbar: React.FC = () => {
                 className="w-6 h-6 rounded-full border border-white/30 hover:border-white hover:bg-white/20 flex items-center justify-center text-[10px] text-white font-bold transition-all"
                 title="Instagram"
               >
-                IG
+                <Instagram className="w-3 h-3" />
               </a>
               <a 
                 href="https://facebook.com" 
@@ -82,7 +85,7 @@ export const Navbar: React.FC = () => {
                 className="w-6 h-6 rounded-full border border-white/30 hover:border-white hover:bg-white/20 flex items-center justify-center text-[10px] text-white font-bold transition-all"
                 title="Facebook"
               >
-                FB
+                <Facebook className="w-3 h-3" />
               </a>
               <a 
                 href="https://youtube.com" 
@@ -91,7 +94,7 @@ export const Navbar: React.FC = () => {
                 className="w-6 h-6 rounded-full border border-white/30 hover:border-white hover:bg-white/20 flex items-center justify-center text-[10px] text-white font-bold transition-all"
                 title="YouTube"
               >
-                YT
+                <Youtube className="w-3 h-3" />
               </a>
             </div>
 
@@ -136,47 +139,44 @@ export const Navbar: React.FC = () => {
       </div>
 
       {/* 2. Asosiy Navbar - Glassmorphism va Yorug' Moviy Uslub */}
-      <div className="bg-white/95 backdrop-blur-xl shadow-xs border-b border-sky-100 transition-all">
+      <div className="bg-white/80 backdrop-blur-xl saturate-150 shadow-xs border-b border-sky-100 transition-all">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           {/* Maktab logosi va rasmiy nomi */}
-          <Link href="/" className="flex items-center gap-3.5 group">
+          <Link href="/" className="flex items-center gap-3.5 group flex-shrink-0">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#0284C7] via-[#0EA5E9] to-[#38BDF8] text-white flex items-center justify-center font-bold shadow-md shadow-sky-500/25 group-hover:scale-105 transition-transform flex-shrink-0">
               <School className="w-6 h-6" />
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="font-extrabold text-slate-900 text-base sm:text-lg leading-tight tracking-tight group-hover:text-[#0284C7] transition-colors">
-                To‘rtko‘l Maktabi
-              </div>
-              <div className="text-[11px] font-bold text-[#0284C7] uppercase tracking-wider mt-0.5">
-                Ixtisoslashtirilgan taʼlim maskani
+                To‘rtko‘l TIM
               </div>
             </div>
           </Link>
 
           {/* Desktop Navigatsiya */}
-          <nav className="hidden lg:flex items-center gap-6 xl:gap-8">
+          <nav className="hidden lg:flex items-center gap-4 xl:gap-8 whitespace-nowrap">
             {/* Biz haqimizda (Dropdown) */}
             <div 
               className="relative"
               onMouseEnter={() => setAboutOpen(true)}
               onMouseLeave={() => setAboutOpen(false)}
             >
-              <button className="flex items-center gap-1 py-2 text-[15px] font-semibold text-slate-800 hover:text-[#0284C7] transition-colors">
+              <button className="flex items-center gap-1 py-2 text-sm xl:text-[15px] font-semibold text-slate-800 hover:text-[#0284C7] transition-colors">
                 <span>{t.nav.about}</span>
                 <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${aboutOpen ? 'rotate-180 text-[#0284C7]' : ''}`} />
               </button>
               {aboutOpen && (
-                <div className="absolute top-full left-0 mt-1 w-60 bg-white rounded-2xl shadow-xl shadow-sky-900/10 border border-sky-100 py-2.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                  <Link href="/biz-haqimizda/maktab-haqida" className="block px-4 py-2.5 text-xs font-semibold text-[#0284C7] hover:bg-sky-50 transition-colors rounded-xl mx-1.5">
+                <div className="absolute top-full left-0 mt-1 before:content-[''] before:absolute before:-top-2 before:left-0 before:right-0 before:h-2 w-60 bg-white rounded-2xl shadow-xl shadow-sky-900/10 border border-sky-100 py-2.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <Link href="/about/school" className="block px-4 py-2.5 text-xs font-semibold text-[#0284C7] hover:bg-sky-50 transition-colors rounded-xl mx-1.5">
                     {t.nav.aboutSchool}
                   </Link>
-                  <Link href="/biz-haqimizda/rahbariyat" className="block px-4 py-2.5 text-xs font-semibold text-slate-700 hover:text-[#0284C7] hover:bg-sky-50 transition-colors rounded-xl mx-1.5">
+                  <Link href="/about/leaders" className="block px-4 py-2.5 text-xs font-semibold text-slate-700 hover:text-[#0284C7] hover:bg-sky-50 transition-colors rounded-xl mx-1.5">
                     {t.nav.leadership}
                   </Link>
-                  <Link href="/biz-haqimizda/oqituvchilar" className="block px-4 py-2.5 text-xs font-semibold text-slate-700 hover:text-[#0284C7] hover:bg-sky-50 transition-colors rounded-xl mx-1.5">
+                  <Link href="/about/teachers" className="block px-4 py-2.5 text-xs font-semibold text-slate-700 hover:text-[#0284C7] hover:bg-sky-50 transition-colors rounded-xl mx-1.5">
                     {t.nav.teachers}
                   </Link>
-                  <Link href="/biz-haqimizda/galereya" className="block px-4 py-2.5 text-xs font-semibold text-slate-700 hover:text-[#0284C7] hover:bg-sky-50 transition-colors rounded-xl mx-1.5">
+                  <Link href="/about/gallery" className="block px-4 py-2.5 text-xs font-semibold text-slate-700 hover:text-[#0284C7] hover:bg-sky-50 transition-colors rounded-xl mx-1.5">
                     {t.nav.gallery}
                   </Link>
                 </div>
@@ -185,8 +185,8 @@ export const Navbar: React.FC = () => {
 
             {/* Qabul */}
             <Link 
-              href="/qabul" 
-              className="text-[15px] font-semibold text-slate-800 hover:text-[#0284C7] transition-colors py-2"
+              href="/admission" 
+              className="text-sm xl:text-[15px] font-semibold text-slate-800 hover:text-[#0284C7] transition-colors py-2"
             >
               {t.nav.admission}
             </Link>
@@ -197,16 +197,16 @@ export const Navbar: React.FC = () => {
               onMouseEnter={() => setLifeOpen(true)}
               onMouseLeave={() => setLifeOpen(false)}
             >
-              <button className="flex items-center gap-1 py-2 text-[15px] font-semibold text-slate-800 hover:text-[#0284C7] transition-colors">
+              <button className="flex items-center gap-1 py-2 text-sm xl:text-[15px] font-semibold text-slate-800 hover:text-[#0284C7] transition-colors">
                 <span>{t.nav.schoolLife}</span>
                 <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${lifeOpen ? 'rotate-180 text-[#0284C7]' : ''}`} />
               </button>
               {lifeOpen && (
-                <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-2xl shadow-xl shadow-sky-900/10 border border-sky-100 py-2.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                  <Link href="/maktab-hayoti/yangiliklar" className="block px-4 py-2.5 text-xs font-semibold text-slate-700 hover:text-[#0284C7] hover:bg-sky-50 transition-colors rounded-xl mx-1.5">
+                <div className="absolute top-full left-0 mt-1 before:content-[''] before:absolute before:-top-2 before:left-0 before:right-0 before:h-2 w-56 bg-white rounded-2xl shadow-xl shadow-sky-900/10 border border-sky-100 py-2.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <Link href="/news" className="block px-4 py-2.5 text-xs font-semibold text-slate-700 hover:text-[#0284C7] hover:bg-sky-50 transition-colors rounded-xl mx-1.5">
                     {t.nav.news}
                   </Link>
-                  <Link href="/maktab-hayoti/talim" className="block px-4 py-2.5 text-xs font-semibold text-slate-700 hover:text-[#0284C7] hover:bg-sky-50 transition-colors rounded-xl mx-1.5">
+                  <Link href="/education" className="block px-4 py-2.5 text-xs font-semibold text-slate-700 hover:text-[#0284C7] hover:bg-sky-50 transition-colors rounded-xl mx-1.5">
                     {t.nav.education}
                   </Link>
                 </div>
@@ -219,16 +219,16 @@ export const Navbar: React.FC = () => {
               onMouseEnter={() => setDirectionsOpen(true)}
               onMouseLeave={() => setDirectionsOpen(false)}
             >
-              <button className="flex items-center gap-1 py-2 text-[15px] font-semibold text-slate-800 hover:text-[#0284C7] transition-colors">
+              <button className="flex items-center gap-1 py-2 text-sm xl:text-[15px] font-semibold text-slate-800 hover:text-[#0284C7] transition-colors">
                 <span>{t.nav.directions}</span>
                 <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${directionsOpen ? 'rotate-180 text-[#0284C7]' : ''}`} />
               </button>
               {directionsOpen && (
-                <div className="absolute top-full left-0 mt-1 w-60 bg-white rounded-2xl shadow-xl shadow-sky-900/10 border border-sky-100 py-2.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                  <Link href="/yonalishlar/aniq-fanlar" className="block px-4 py-2.5 text-xs font-semibold text-slate-700 hover:text-[#0284C7] hover:bg-sky-50 transition-colors rounded-xl mx-1.5">
+                <div className="absolute top-full left-0 mt-1 before:content-[''] before:absolute before:-top-2 before:left-0 before:right-0 before:h-2 w-60 bg-white rounded-2xl shadow-xl shadow-sky-900/10 border border-sky-100 py-2.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <Link href="/programs/exact" className="block px-4 py-2.5 text-xs font-semibold text-slate-700 hover:text-[#0284C7] hover:bg-sky-50 transition-colors rounded-xl mx-1.5">
                     {t.nav.exactSciences}
                   </Link>
-                  <Link href="/yonalishlar/tabiiy-fanlar" className="block px-4 py-2.5 text-xs font-semibold text-slate-700 hover:text-[#0284C7] hover:bg-sky-50 transition-colors rounded-xl mx-1.5">
+                  <Link href="/programs/natural" className="block px-4 py-2.5 text-xs font-semibold text-slate-700 hover:text-[#0284C7] hover:bg-sky-50 transition-colors rounded-xl mx-1.5">
                     {t.nav.naturalSciences}
                   </Link>
                 </div>
@@ -237,15 +237,15 @@ export const Navbar: React.FC = () => {
 
             {/* Bog'lanish */}
             <Link 
-              href="/boglanish" 
-              className="text-[15px] font-semibold text-slate-800 hover:text-[#0284C7] transition-colors py-2"
+              href="/contact" 
+              className="text-sm xl:text-[15px] font-semibold text-slate-800 hover:text-[#0284C7] transition-colors py-2"
             >
               {t.nav.contact}
             </Link>
           </nav>
 
           {/* O'ng tomon: Ariza topshirish CTA tugmasi (Light Blue Gradient) */}
-          <div className="hidden sm:flex items-center gap-4">
+          <div className="hidden sm:flex items-center gap-4 flex-shrink-0 whitespace-nowrap">
             <a
               href="https://ariza.piima.uz"
               target="_blank"
@@ -274,63 +274,63 @@ export const Navbar: React.FC = () => {
         <div className="lg:hidden bg-white border-b border-sky-100 px-6 py-6 space-y-4 shadow-xl">
           <div className="space-y-1">
             <Link 
-              href="/biz-haqimizda/maktab-haqida" 
+              href="/about/school" 
               onClick={() => setMobileOpen(false)}
               className="block py-2 text-sm font-semibold text-[#0284C7]"
             >
               {t.nav.aboutSchool}
             </Link>
             <Link 
-              href="/biz-haqimizda/rahbariyat" 
+              href="/about/leaders" 
               onClick={() => setMobileOpen(false)}
               className="block py-2 text-sm font-semibold text-slate-800"
             >
               {t.nav.leadership}
             </Link>
             <Link 
-              href="/biz-haqimizda/oqituvchilar" 
+              href="/about/teachers" 
               onClick={() => setMobileOpen(false)}
               className="block py-2 text-sm font-semibold text-slate-800"
             >
               {t.nav.teachers}
             </Link>
             <Link 
-              href="/biz-haqimizda/galereya" 
+              href="/about/gallery" 
               onClick={() => setMobileOpen(false)}
               className="block py-2 text-sm font-semibold text-slate-800"
             >
               {t.nav.gallery}
             </Link>
             <Link 
-              href="/qabul" 
+              href="/admission" 
               onClick={() => setMobileOpen(false)}
               className="block py-2 text-sm font-semibold text-slate-800"
             >
               {t.nav.admission}
             </Link>
             <Link 
-              href="/maktab-hayoti/yangiliklar" 
+              href="/news" 
               onClick={() => setMobileOpen(false)}
               className="block py-2 text-sm font-semibold text-slate-800"
             >
               {t.nav.news}
             </Link>
             <Link 
-              href="/yonalishlar/aniq-fanlar" 
+              href="/programs/exact" 
               onClick={() => setMobileOpen(false)}
               className="block py-2 text-sm font-semibold text-slate-800"
             >
               {t.nav.exactSciences}
             </Link>
             <Link 
-              href="/yonalishlar/tabiiy-fanlar" 
+              href="/programs/natural" 
               onClick={() => setMobileOpen(false)}
               className="block py-2 text-sm font-semibold text-slate-800"
             >
               {t.nav.naturalSciences}
             </Link>
             <Link 
-              href="/boglanish" 
+              href="/contact" 
               onClick={() => setMobileOpen(false)}
               className="block py-2 text-sm font-semibold text-slate-800"
             >
@@ -339,7 +339,7 @@ export const Navbar: React.FC = () => {
           </div>
 
           <div className="pt-4 border-t border-sky-100 flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">Tilni tanlang:</span>
+            <span className="text-xs font-semibold text-slate-500">{tr("Tilni tanlang:")}</span>
             <div className="flex gap-2">
               {languages.map((l) => (
                 <button

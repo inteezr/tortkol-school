@@ -2,45 +2,17 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { Reveal } from './Reveal';
 import { useLanguage } from '../lib/LanguageContext';
 import { ArrowRight, Camera, ZoomIn } from 'lucide-react';
 import { ImageViewer } from './ImageViewer';
 
 export const GalleryPreview: React.FC = () => {
-  const { t } = useLanguage();
+  const { t, tr } = useLanguage();
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
 
-  const photos = [
-    {
-      title: 'Zamonaviy dars xonalari',
-      caption: 'Maktabimizning yorug‘ va qulay jihozlangan innovatsion sinfxonalari.',
-      url: 'https://images.unsplash.com/photo-1580582932707-520aed937b7b?auto=format&fit=crop&w=1200&q=85',
-      date: '2026-yil noyabr',
-      count: 6,
-    },
-    {
-      title: 'Chuqurlashtirilgan laboratoriyalar',
-      caption: 'Kimyo va biologiya fanlari bo‘yicha o‘quvchilar mustaqil amaliy tajribalar o‘tkazadigan xona.',
-      url: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=1200&q=85',
-      date: '2026-yil oktyabr',
-      count: 8,
-    },
-    {
-      title: 'O‘quvchilar ilmiy forumi',
-      caption: 'Respublika va xalqaro fan olimpiadalariga tayyorgarlik va loyihalar himoyasi.',
-      url: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1200&q=85',
-      date: '2026-yil oktyabr',
-      count: 12,
-    },
-    {
-      title: 'Axborot-resurs markazi va kutubxona',
-      caption: 'Fundamental ilmiy adabiyotlar va boy kitob fondiga ega zamonaviy kutubxona.',
-      url: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=1200&q=85',
-      date: '2026-yil sentyabr',
-      count: 5,
-    },
-  ];
+  const photos: { title: string; caption: string; url: string; date: string; count: number }[] = [];
 
   const openViewer = (index: number) => {
     setViewerIndex(index);
@@ -51,41 +23,44 @@ export const GalleryPreview: React.FC = () => {
     <section className="py-20 bg-gradient-to-b from-white via-[#F0F8FF] to-white font-poppins">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Sarlavha */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-14 gap-6">
+        <Reveal className="flex flex-col md:flex-row md:items-end justify-between mb-14 gap-6">
           <div>
-            <span className="text-[#0284C7] font-bold text-xs sm:text-sm tracking-wider uppercase block mb-2">
-              FOTOGALEREYA
+            <span className="kicker mb-2">
+              {tr("FOTOGALEREYA")}
             </span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">
               {t.gallery.title}
             </h2>
             <p className="mt-2 text-sm sm:text-base text-slate-600 font-normal">
-              Maktabimiz hayotidan yorqin lavhalar, dars jarayonlari va yutuqlar aks etgan fotoalbomlar.
+              {tr("Maktabimiz hayotidan yorqin lavhalar, dars jarayonlari va yutuqlar aks etgan fotoalbomlar.")}
             </p>
           </div>
 
           <Link
-            href="/biz-haqimizda/galereya"
+            href="/about/gallery"
             className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full border border-sky-200 bg-sky-50 hover:bg-[#0284C7] hover:text-white text-xs font-bold text-[#0284C7] shadow-xs active:scale-95 transition-all self-start md:self-auto"
           >
             <span>{t.gallery.allPhotosBtn}</span>
             <ArrowRight className="w-4 h-4" />
           </Link>
-        </div>
+        </Reveal>
 
         {/* 4 ta Fotoalbom Kartasi (rounded-[32px]) */}
+        {photos.length === 0 && (
+          <p className="text-center text-slate-500 py-10">{tr("Hozircha fotoalbomlar qo'shilmagan.")}</p>
+        )}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {photos.map((photo, idx) => (
             <div
               key={idx}
               onClick={() => openViewer(idx)}
-              className="rounded-[32px] overflow-hidden bg-white shadow-xs hover:shadow-xl hover:border-sky-300 transition-all duration-500 cursor-pointer group border border-sky-100 flex flex-col"
+              className="rounded-[32px] overflow-hidden bg-white shadow-xs hover:shadow-card-hover hover:border-sky-300 lift cursor-pointer group border border-sky-100 flex flex-col"
             >
               {/* Surat bloki */}
               <div className="relative aspect-[4/3] overflow-hidden rounded-[26px] m-2.5 bg-slate-900">
-                <img
+                <img loading="lazy" decoding="async"
                   src={photo.url}
-                  alt={photo.title}
+                  alt={tr(photo.title)}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 brightness-[0.95]"
                 />
 
@@ -110,7 +85,7 @@ export const GalleryPreview: React.FC = () => {
                     {photo.date}
                   </div>
                   <h3 className="text-sm sm:text-base font-bold text-slate-900 group-hover:text-[#0284C7] transition-colors line-clamp-2 leading-snug">
-                    {photo.title}
+                    {tr(photo.title)}
                   </h3>
                 </div>
               </div>

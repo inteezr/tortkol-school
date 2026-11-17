@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { createSessionToken } from '@/lib/admin-auth';
+import { verifyLogin } from '@/lib/admin-store';
 
-const VALID_USERNAME = process.env.ADMIN_USERNAME || 'admin';
-const VALID_PASSWORD = process.env.ADMIN_PASSWORD || 'Turtkol2026!';
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,15 +15,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (username.trim() === VALID_USERNAME && password === VALID_PASSWORD) {
+    if (await verifyLogin(String(username).trim(), String(password))) {
       // 7 kunlik admin sessiya belgisi yaratish
-      const sessionToken = Buffer.from(
-        JSON.stringify({
-          user: VALID_USERNAME,
-          role: 'superadmin',
-          time: Date.now(),
-        })
-      ).toString('base64');
+      const sessionToken = createSessionToken(String(username).trim());
 
       const cookieStore = await cookies();
       cookieStore.set('admin_session', sessionToken, {

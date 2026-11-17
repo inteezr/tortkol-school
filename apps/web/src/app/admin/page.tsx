@@ -33,12 +33,17 @@ import {
   X,
   MessageSquare
 } from 'lucide-react';
+import { useToast } from '../../lib/ToastContext';
+import { ImageUpload } from './ImageUpload';
+import { ProfileModal } from './ProfileModal';
+import { StaffList, StaffModal, type StaffEditor, type StaffScope } from './StaffManager';
 
 export default function AdminPage() {
   const router = useRouter();
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [adminUser, setAdminUser] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'posts' | 'teachers' | 'messages' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'posts' | 'teachers' | 'messages'>('overview');
+  const [showProfile, setShowProfile] = useState(false);
   
   // Ma'lumotlar state'lari
   const [postsList, setPostsList] = useState<any[]>([]);
@@ -47,11 +52,13 @@ export default function AdminPage() {
   const [messagesList, setMessagesList] = useState<any[]>([]);
   const [loadingData, setLoadingData] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const toast = useToast();
+  const setFeedback = (f: { type: 'success' | 'error'; message: string } | null) => { if (f) toast[f.type](f.message); };
 
   // Qidiruv va filtrlar
   const [searchQuery, setSearchQuery] = useState('');
   const [postTypeFilter, setPostTypeFilter] = useState<'all' | 'news' | 'education'>('all');
+  const [staffEditor, setStaffEditor] = useState<StaffEditor>(null);
   const [teacherSubTab, setTeacherSubTab] = useState<'leaders' | 'teachers'>('leaders');
   const [messageFilter, setMessageFilter] = useState<'all' | 'new' | 'read'>('all');
   const [showNewPostModal, setShowNewPostModal] = useState(false);
@@ -63,7 +70,7 @@ export default function AdminPage() {
     status: 'published',
     excerpt: '',
     content: '',
-    coverImage: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1200&q=80',
+    coverImage: '',
   });
 
   // 1. Auth tekshiruvi
@@ -91,9 +98,9 @@ export default function AdminPage() {
     try {
       setLoadingData(true);
       const [resPosts, resTeachers, resLeaders, resMessages] = await Promise.all([
-        fetch('/api/posts').then(r => r.json()).catch(() => ({ posts: [] })),
-        fetch('/api/teachers?scope=teachers').then(r => r.json()).catch(() => ({ teachers: [] })),
-        fetch('/api/teachers?scope=leaders').then(r => r.json()).catch(() => ({ leaders: [] })),
+        fetch(`/api/posts?_=${Date.now()}`, { cache: 'no-store' }).then(r => r.json()).catch(() => ({ posts: [] })),
+        fetch(`/api/teachers?scope=teachers&_=${Date.now()}`, { cache: 'no-store' }).then(r => r.json()).catch(() => ({ teachers: [] })),
+        fetch(`/api/teachers?scope=leaders&_=${Date.now()}`, { cache: 'no-store' }).then(r => r.json()).catch(() => ({ leaders: [] })),
         fetch('/api/contact').then(r => r.json()).catch(() => ({ messages: [] })),
       ]);
 
@@ -114,9 +121,22 @@ export default function AdminPage() {
     }
   }, [checkingAuth]);
 
+  const handleStaffDelete = async (scope: StaffScope, item: any) => {
+    if (!(await toast.confirm(`“${item.full_name}” ni o‘chirmoqchimisiz?`))) return;
+    try {
+      const res = await fetch(`/api/teachers?scope=${scope}&id=${item.id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'O‘chirib bo‘lmadi');
+      setFeedback({ type: 'success', message: 'O‘chirildi' });
+      loadData();
+    } catch (err: any) {
+      setFeedback({ type: 'error', message: err.message });
+    }
+  };
+
   // Chiqish (Logout)
   const handleLogout = async () => {
-    if (confirm('Admin tizimidan chiqmoqchimisiz?')) {
+    if (await toast.confirm('Admin tizimidan chiqmoqchimisiz?')) {
       await fetch('/api/admin/logout', { method: 'POST' });
       router.replace('/admin/login');
     }
@@ -149,7 +169,7 @@ export default function AdminPage() {
         status: 'published',
         excerpt: '',
         content: '',
-        coverImage: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1200&q=80',
+        coverImage: '',
       });
 
       setShowNewPostModal(false);
@@ -163,7 +183,7 @@ export default function AdminPage() {
 
   // Postni o'chirish
   const handleDeletePost = async (id: number | string, title: string) => {
-    if (!confirm(`"${title}" sarlavhali postni o'chirishni tasdiqlaysizmi?`)) return;
+    if (!(await toast.confirm(`"${title}" sarlavhali postni o'chirishni tasdiqlaysizmi?`))) return;
 
     try {
       const res = await fetch(`/api/posts?id=${id}`, { method: 'DELETE' });
@@ -215,6 +235,39 @@ export default function AdminPage() {
     return messagesList.filter(m => m.status === 'new').length;
   }, [messagesList]);
 
+  const navItems: { id: typeof activeTab; label: string; badge?: number }[] = [
+    { id: 'overview', label: 'Dashboard' },
+    { id: 'posts', label: 'Postlar', badge: postsList.length },
+    { id: 'teachers', label: 'Xodimlar' },
+    { id: 'messages', label: 'Murojaatlar', badge: unreadMessagesCount },
+  ];
+  const pageTitle: Record<string, string> = {
+    overview: 'Boshqaruv paneli',
+    posts: 'Postlar boshqaruvi',
+    teachers: 'Xodimlar: rahbariyat va o‘qituvchilar',
+    messages: 'Kelgan murojaatlar',
+  };
+
+  // Oylar bo'yicha postlar (grafik uchun, oxirgi 8 oy)
+  const monthly = useMemo(() => {
+    const now = new Date();
+    const months = Array.from({ length: 8 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - (7 - i), 1);
+      return { key: `${d.getFullYear()}-${d.getMonth()}`, label: d.toLocaleDateString('uz-UZ', { month: 'short' }), count: 0 };
+    });
+    postsList.forEach((p) => {
+      if (!p.published_at) return;
+      const d = new Date(p.published_at);
+      const m = months.find((x) => x.key === `${d.getFullYear()}-${d.getMonth()}`);
+      if (m) m.count += 1;
+    });
+    return months;
+  }, [postsList]);
+  const maxMonthly = Math.max(1, ...monthly.map((m) => m.count));
+  const [hoverBar, setHoverBar] = useState<number | null>(null);
+  const readCount = messagesList.length - unreadMessagesCount;
+  const answeredPct = messagesList.length ? Math.round((readCount / messagesList.length) * 100) : 0;
+
   if (checkingAuth) {
     return (
       <div className="min-h-screen bg-[#F4F6FB] flex flex-col items-center justify-center space-y-4">
@@ -227,593 +280,292 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F4F6FB] text-slate-800 flex flex-col md:flex-row antialiased font-poppins selection:bg-blue-100 selection:text-blue-900">
-      {/* ===================== SIDEBAR ===================== */}
-      <aside className="w-full md:w-72 bg-white border-r border-slate-200/90 flex flex-col justify-between flex-shrink-0 z-20">
-        <div>
-          {/* Logo va Brend */}
-          <div className="p-6 border-b border-slate-100">
-            <div className="flex items-center gap-3.5">
-              <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#00265B] via-[#003B8E] to-[#0047AB] flex items-center justify-center text-white shadow-md shadow-blue-900/20">
-                <School className="w-6 h-6" />
-              </div>
-              <div>
-                <div className="font-extrabold text-sm text-slate-900 leading-tight">To‘rtko‘l Maktabi</div>
-                <div className="text-[11px] font-semibold text-[#0047AB] tracking-wide mt-0.5">Boshqaruv Paneli</div>
-              </div>
+    <div className="min-h-screen bg-[#E9ECF4] text-slate-800 antialiased selection:bg-sky-100 selection:text-sky-900">
+      <div className="max-w-[1400px] mx-auto w-full p-3 sm:p-6 flex flex-col gap-6">
+        {/* ===================== YUQORI SUZUVCHI PANEL ===================== */}
+        <header className="sticky top-3 z-20 bg-white/90 backdrop-blur-xl rounded-[28px] px-4 sm:px-5 py-3 flex flex-wrap items-center justify-between gap-3 shadow-[0_8px_30px_-12px_rgba(15,23,42,0.15)]">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#0284C7] to-[#38BDF8] flex items-center justify-center text-white shadow-md shadow-sky-500/30">
+              <School className="w-5 h-5" />
+            </div>
+            <div className="hidden sm:block leading-tight">
+              <div className="font-bold text-sm text-slate-900 font-display">To‘rtko‘l tuman ixtisoslashtirilgan maktabi</div>
+              <div className="text-[11px] text-slate-500">Boshqaruv paneli</div>
             </div>
           </div>
 
-          {/* Menyu Navigatsiyasi */}
-          <div className="p-4 space-y-6">
-            <div>
-              <div className="px-3 mb-2 text-[10px] font-bold tracking-wider text-slate-400 uppercase">
-                Asosiy Boshqaruv
-              </div>
-              <nav className="space-y-1">
-                <button
-                  onClick={() => setActiveTab('overview')}
-                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                    activeTab === 'overview'
-                      ? 'bg-[#0047AB] text-white shadow-md shadow-blue-600/25'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
-                  }`}
-                >
-                  <span className="flex items-center gap-3">
-                    <LayoutDashboard className="w-4 h-4" />
-                    <span>Dashboard</span>
-                  </span>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
-                    activeTab === 'overview' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
-                  }`}>
-                    Asosiy
-                  </span>
-                </button>
+          <nav className="order-3 lg:order-none w-full lg:w-auto flex items-center gap-1 bg-slate-100/80 rounded-full p-1 overflow-x-auto">
+            {navItems.map((n) => (
+              <button
+                key={n.id}
+                onClick={() => setActiveTab(n.id)}
+                className={`relative px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                  activeTab === n.id ? 'bg-slate-900 text-white shadow-md' : 'text-slate-600 hover:text-slate-900 hover:bg-white'
+                }`}
+              >
+                {n.label}
+                {!!n.badge && n.badge > 0 && (
+                  <span className={`text-[10px] min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center font-bold ${
+                    n.id === 'messages' ? 'bg-rose-500 text-white' : activeTab === n.id ? 'bg-white/20 text-white' : 'bg-white text-slate-600'
+                  }`}>{n.badge}</span>
+                )}
+              </button>
+            ))}
+          </nav>
 
-                <button
-                  onClick={() => setActiveTab('posts')}
-                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                    activeTab === 'posts'
-                      ? 'bg-[#0047AB] text-white shadow-md shadow-blue-600/25'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
-                  }`}
-                >
-                  <span className="flex items-center gap-3">
-                    <FileText className="w-4 h-4" />
-                    <span>Postlar & Materiallar</span>
-                  </span>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
-                    activeTab === 'posts' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
-                  }`}>
-                    {postsList.length}
-                  </span>
-                </button>
-
-                <button
-                  onClick={() => setActiveTab('teachers')}
-                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                    activeTab === 'teachers'
-                      ? 'bg-[#0047AB] text-white shadow-md shadow-blue-600/25'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
-                  }`}
-                >
-                  <span className="flex items-center gap-3">
-                    <Users className="w-4 h-4" />
-                    <span>O‘qituvchilar tarkibi</span>
-                  </span>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
-                    activeTab === 'teachers' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
-                  }`}>
-                    {(teachersList.length || 6) + (leadersList.length || 4)}
-                  </span>
-                </button>
-              </nav>
-            </div>
-
-            <div>
-              <div className="px-3 mb-2 text-[10px] font-bold tracking-wider text-slate-400 uppercase">
-                Muloqot & Tizim
-              </div>
-              <nav className="space-y-1">
-                <button
-                  onClick={() => setActiveTab('messages')}
-                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                    activeTab === 'messages'
-                      ? 'bg-[#0047AB] text-white shadow-md shadow-blue-600/25'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
-                  }`}
-                >
-                  <span className="flex items-center gap-3">
-                    <Mail className="w-4 h-4" />
-                    <span>Kelgan murojaatlar</span>
-                  </span>
-                  {unreadMessagesCount > 0 && (
-                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-rose-500 text-white animate-pulse">
-                      {unreadMessagesCount} yangi
-                    </span>
-                  )}
-                </button>
-
-                <button
-                  onClick={() => setActiveTab('settings')}
-                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                    activeTab === 'settings'
-                      ? 'bg-[#0047AB] text-white shadow-md shadow-blue-600/25'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
-                  }`}
-                >
-                  <span className="flex items-center gap-3">
-                    <Settings className="w-4 h-4" />
-                    <span>Baza & Sozlamalar</span>
-                  </span>
-                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                </button>
-              </nav>
-            </div>
-          </div>
-        </div>
-
-        {/* Profil va Chiqish */}
-        <div className="p-4 border-t border-slate-100 space-y-2.5">
-          <Link
-            href="/"
-            target="_blank"
-            className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:text-[#0047AB] hover:bg-blue-50/60 transition-all border border-transparent hover:border-blue-100"
-          >
-            <span className="flex items-center gap-2.5">
-              <ExternalLink className="w-4 h-4 text-[#0047AB]" />
-              <span>Saytni ko‘rish</span>
-            </span>
-            <ArrowUpRight className="w-3.5 h-3.5 text-slate-400" />
-          </Link>
-
-          <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#0047AB] to-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-sm">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={loadData}
+              disabled={loadingData}
+              title="Ma'lumotlarni yangilash"
+              className="w-10 h-10 rounded-full bg-white border border-slate-200 text-slate-600 hover:text-[#0284C7] flex items-center justify-center transition-all disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${loadingData ? 'animate-spin' : ''}`} />
+            </button>
+            <Link href="/" target="_blank" title="Saytni ko‘rish" className="w-10 h-10 rounded-full bg-white border border-slate-200 text-slate-600 hover:text-[#0284C7] flex items-center justify-center transition-all">
+              <ExternalLink className="w-4 h-4" />
+            </Link>
+            <div className="flex items-center gap-2.5 pl-2">
+              <button
+                onClick={() => setShowProfile(true)}
+                title="Login va parolni o‘zgartirish"
+                className="flex items-center gap-2.5 rounded-full pr-2 hover:bg-slate-100 transition-colors text-left"
+              >
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#0284C7] to-[#38BDF8] text-white flex items-center justify-center font-bold text-sm">
                   {adminUser?.username?.[0]?.toUpperCase() || 'A'}
                 </div>
-                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full"></span>
-              </div>
-              <div className="overflow-hidden">
-                <div className="text-xs font-bold text-slate-900 truncate">{adminUser?.username || 'admin'}</div>
-                <div className="text-[10px] text-slate-500 font-medium">Bosh Administrator</div>
-              </div>
-            </div>
-            <button
-              onClick={handleLogout}
-              title="Tizimdan chiqish"
-              className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </aside>
-
-      {/* ===================== ASOSIY ISH MAYDONI ===================== */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Yuqori Header Bar */}
-        <header className="bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-6 sm:px-10 py-4 sticky top-0 z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div>
-              <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                <span>To‘rtko‘l Maktabi</span>
-                <span>/</span>
-                <span className="text-[#0047AB]">
-                  {activeTab === 'overview' && 'Boshqaruv Paneli'}
-                  {activeTab === 'posts' && 'Postlar va Maqolalar'}
-                  {activeTab === 'teachers' && 'Pedagogik Jamoa'}
-                  {activeTab === 'messages' && 'Murojaatlar Pochtasi'}
-                  {activeTab === 'settings' && 'Tizim va Baza'}
-                </span>
-              </div>
-              <h1 className="text-xl font-extrabold text-slate-900 mt-0.5">
-                {activeTab === 'overview' && 'Dashboard'}
-                {activeTab === 'posts' && 'Postlar boshqaruvi'}
-                {activeTab === 'teachers' && 'O‘qituvchilar va Rahbariyat'}
-                {activeTab === 'messages' && 'Kelgan murojaatlar'}
-                {activeTab === 'settings' && 'Baza va Tizim holati'}
-              </h1>
+                <div className="hidden md:block leading-tight">
+                  <div className="text-sm font-semibold text-slate-900">{adminUser?.username || 'admin'}</div>
+                  <div className="text-[11px] text-slate-500">Bosh administrator</div>
+                </div>
+              </button>
+              <button onClick={handleLogout} title="Tizimdan chiqish" className="p-2 rounded-full text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors">
+                <LogOut className="w-4 h-4" />
+              </button>
             </div>
           </div>
+        </header>
 
-          <div className="flex items-center gap-3">
-            {/* Tezkor qidiruv */}
+        {/* Sarlavha va amallar */}
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 px-1">
+          <div>
+            <h1 className="text-3xl sm:text-4xl font-semibold text-slate-900 font-display">{pageTitle[activeTab]}</h1>
+            <p className="text-sm text-slate-500 mt-1">
+              {new Date().toLocaleDateString('uz-UZ', { day: 'numeric', month: 'long', year: 'numeric' })} · maktab saytining joriy holati
+            </p>
+          </div>
+          {activeTab === 'posts' && (
+          <div className="flex items-center gap-2">
             <div className="relative hidden md:block">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Materiallardan qidirish..."
-                className="pl-9 pr-4 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-[#0047AB] focus:ring-2 focus:ring-blue-100 outline-none w-56 transition-all text-slate-800 placeholder:text-slate-400"
+                className="pl-10 pr-4 py-3 text-sm bg-white rounded-full outline-none w-64 focus:ring-2 focus:ring-sky-200 transition-all placeholder:text-slate-400"
               />
             </div>
-
             <button
-              onClick={loadData}
-              disabled={loadingData}
-              title="Ma'lumotlarni yangilash"
-              className="p-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:text-[#0047AB] hover:border-blue-200 hover:bg-blue-50/50 transition-all disabled:opacity-50 shadow-xs"
-            >
-              <RefreshCw className={`w-4 h-4 ${loadingData ? 'animate-spin text-[#0047AB]' : ''}`} />
-            </button>
-
-            <button
-              onClick={() => {
-                setActiveTab('posts');
-                setShowNewPostModal(true);
-              }}
-              className="px-4 py-2 rounded-xl bg-[#0047AB] hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-2 shadow-md shadow-blue-600/20 active:scale-[0.98] transition-all"
+              onClick={() => { setActiveTab('posts'); setShowNewPostModal(true); }}
+              className="px-6 py-3 rounded-full bg-gradient-to-r from-[#0284C7] to-[#38BDF8] text-white text-sm font-semibold flex items-center gap-2 shadow-lg shadow-sky-500/25 hover:shadow-xl hover:-translate-y-0.5 active:scale-95 transition-all"
             >
               <Plus className="w-4 h-4" />
               <span>Yangi post</span>
             </button>
           </div>
-        </header>
+          )}
+          {activeTab === 'teachers' && (
+            <button
+              onClick={() => setStaffEditor({ scope: teacherSubTab, item: null })}
+              className="px-6 py-3 rounded-full bg-gradient-to-r from-[#0284C7] to-[#38BDF8] text-white text-sm font-semibold flex items-center gap-2 shadow-lg shadow-sky-500/25 hover:shadow-xl hover:-translate-y-0.5 active:scale-95 transition-all"
+            >
+              <Plus className="w-4 h-4" />
+              <span>{teacherSubTab === 'leaders' ? 'Rahbar qo‘shish' : 'O‘qituvchi qo‘shish'}</span>
+            </button>
+          )}
+        </div>
 
         {/* Kontent Konteyneri */}
-        <main className="flex-1 p-6 sm:p-10 overflow-y-auto">
-          {/* Bildirishnoma (Feedback toast) */}
-          {feedback && (
-            <div className={`p-4 rounded-2xl text-xs font-semibold flex items-center justify-between mb-6 shadow-sm border ${
-              feedback.type === 'success' 
-                ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
-                : 'bg-rose-50 text-rose-800 border-rose-200'
-            }`}>
-              <div className="flex items-center gap-2.5">
-                {feedback.type === 'success' ? (
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                ) : (
-                  <ShieldCheck className="w-4 h-4 text-rose-600 flex-shrink-0" />
-                )}
-                <span>{feedback.message}</span>
-              </div>
-              <button onClick={() => setFeedback(null)} className="p-1 hover:opacity-70 transition-opacity">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          )}
-
+        <main className="flex-1">
           {/* ==================== TAB 1: OVERVIEW (DASHBOARD) ==================== */}
           {activeTab === 'overview' && (
-            <div className="space-y-8">
-              {/* Xush kelibsiz banneri */}
-              <div className="bg-gradient-to-r from-blue-50 via-indigo-50/50 to-sky-50 border border-blue-100/90 rounded-3xl p-6 sm:p-8 relative overflow-hidden shadow-xs">
-                <div className="max-w-2xl relative z-10">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/80 border border-blue-200 text-[#0047AB] text-xs font-bold mb-3 shadow-xs">
-                    <Sparkles className="w-3.5 h-3.5 text-[#0047AB]" />
-                    <span>To‘rtko‘l Maktabi Rasmiy Boshqaruv Markazi</span>
-                  </div>
-                  <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-tight">
-                    Xush kelibsiz, Bosh Administrator! 👋
-                  </h2>
-                  <p className="text-xs sm:text-sm text-slate-600 mt-2 leading-relaxed">
-                    Ushbu paneldan yangiliklar, ta'lim materiallari, pedagoglar jamoasi va ota-onalar tomonidan yuborilgan murojaatlarni real vaqt rejimida boshqaring.
-                  </p>
-                </div>
-
-                <div className="mt-5 flex flex-wrap items-center gap-3 text-xs font-semibold text-slate-600">
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200/80 shadow-xs">
-                    <Calendar className="w-3.5 h-3.5 text-[#0047AB]" />
-                    <span>{new Date().toLocaleDateString('uz-UZ', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200/80 shadow-xs">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span className="text-emerald-700">Supabase Cloud Baza: Faol</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200/80 shadow-xs">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-[#0047AB]" />
-                    <span className="text-[#0047AB]">Avto-tarjima quvvati: 100%</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* KPI Metrik kartalari */}
+            <div className="space-y-5 admin-stagger">
+              {/* KPI kartalar */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                {/* 1. Postlar */}
-                <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs hover:shadow-md transition-shadow">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Jami Materiallar</span>
-                    <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#0047AB] flex items-center justify-center">
-                      <FileText className="w-5 h-5" />
-                    </div>
+                <div className="adm-card relative overflow-hidden rounded-[28px] p-6 bg-gradient-to-br from-[#0284C7] via-[#0EA5E9] to-[#38BDF8] text-white shadow-xl shadow-sky-500/25">
+                  <div className="absolute -right-8 -bottom-10 w-40 h-40 rounded-full bg-white/15 blur-2xl" />
+                  <div className="flex items-start justify-between">
+                    <span className="text-sm text-white/85">Jami materiallar</span>
+                    <div className="w-12 h-12 rounded-full bg-white text-[#0284C7] flex items-center justify-center"><FileText className="w-5 h-5" /></div>
                   </div>
-                  <div className="text-3xl font-extrabold text-slate-900">{postsList.length}</div>
-                  <div className="flex items-center justify-between text-xs text-slate-500 mt-2">
-                    <span className="text-emerald-600 font-bold flex items-center gap-1">
-                      <Check className="w-3.5 h-3.5" /> Barchasi nashrda
-                    </span>
-                    <span className="text-slate-400 text-[11px]">Yangilik & Ta'lim</span>
+                  <div className="mt-3 flex items-end gap-2">
+                    <span className="text-5xl font-semibold font-display">{postsList.length}</span>
+                    <span className="mb-2 text-[11px] px-2 py-0.5 rounded-full bg-white/20">nashrda</span>
+                  </div>
+                  <div className="mt-3 text-xs text-white/80">Yangilik va ta'lim maqolalari</div>
+                </div>
+
+                <div className="adm-card rounded-[28px] p-6 bg-white">
+                  <div className="flex items-start justify-between">
+                    <span className="text-sm text-slate-500">Pedagoglar</span>
+                    <div className="w-12 h-12 rounded-full bg-slate-900 text-white flex items-center justify-center"><Users className="w-5 h-5" /></div>
+                  </div>
+                  <div className="mt-3 flex items-end gap-2">
+                    <span className="text-5xl font-semibold font-display text-slate-900">{teachersList.length}</span>
+                    <span className="mb-2 text-[11px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-semibold">faol</span>
+                  </div>
+                  <div className="mt-3 text-xs text-slate-500">Oliy va 1-toifali ustozlar</div>
+                </div>
+
+                <div className="adm-card rounded-[28px] p-6 bg-white">
+                  <div className="flex items-start justify-between">
+                    <span className="text-sm text-slate-500">Ma'muriyat</span>
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#0284C7] to-[#38BDF8] text-white flex items-center justify-center"><School className="w-5 h-5" /></div>
+                  </div>
+                  <div className="mt-3 flex items-end gap-2">
+                    <span className="text-5xl font-semibold font-display text-slate-900">{leadersList.length}</span>
+                  </div>
+                  <div className="mt-3 text-xs text-slate-500">Direktor va o‘rinbosarlar</div>
+                </div>
+
+                <div className="adm-card rounded-[28px] p-6 bg-white">
+                  <div className="flex items-start justify-between">
+                    <span className="text-sm text-slate-500">Murojaatlar</span>
+                    <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center"><Mail className="w-5 h-5" /></div>
+                  </div>
+                  <div className="mt-3 flex items-end gap-2">
+                    <span className="text-5xl font-semibold font-display text-slate-900">{messagesList.length}</span>
+                    {unreadMessagesCount > 0 && <span className="mb-2 text-[11px] px-2 py-0.5 rounded-full bg-rose-50 text-rose-600 font-semibold">{unreadMessagesCount} yangi</span>}
+                  </div>
+                  <div className="mt-3 text-xs text-slate-500">{unreadMessagesCount > 0 ? "O'qilmagan murojaatlar bor" : "Barchasi ko'rilgan"}</div>
+                </div>
+              </div>
+
+              {/* Grafik + yarim doira ko'rsatkich */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                <div className="adm-card lg:col-span-2 bg-white rounded-[28px] p-6 sm:p-7">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-semibold font-display text-slate-900">Nashrlar dinamikasi</h3>
+                    <span className="px-4 py-2 rounded-full bg-slate-100 text-xs font-semibold text-slate-600">Oxirgi 8 oy</span>
+                  </div>
+                  <div className="relative h-64 flex items-end gap-2 sm:gap-4 pl-8">
+                    {[0, 1, 2, 3].map((g) => (
+                      <div key={g} className="absolute left-0 right-0 border-t border-dashed border-slate-200 text-[10px] text-slate-400" style={{ bottom: `${(g / 3) * 100 * 0.88 + 12}%` }}>
+                        <span className="absolute -top-2 left-0 bg-white pr-1">{Math.round((maxMonthly * g) / 3)}</span>
+                      </div>
+                    ))}
+                    {monthly.map((m, i) => {
+                      const h = Math.max(8, (m.count / maxMonthly) * 88);
+                      const active = hoverBar === i;
+                      return (
+                        <div key={m.key} className="relative flex-1 h-full flex flex-col justify-end items-center gap-2 z-10" onMouseEnter={() => setHoverBar(i)} onMouseLeave={() => setHoverBar(null)}>
+                          {active && (
+                            <div className="absolute -top-2 left-1/2 -translate-x-1/2 -translate-y-full bg-white rounded-2xl shadow-xl px-4 py-2.5 text-xs whitespace-nowrap z-20 border border-slate-100">
+                              <div className="font-semibold text-slate-900 capitalize">{m.label}</div>
+                              <div className="text-slate-500 mt-0.5">Nashrlar: <b className="text-slate-900">{m.count}</b></div>
+                            </div>
+                          )}
+                          <div
+                            className={`adm-bar w-full rounded-2xl transition-colors duration-300 ${active ? 'bg-gradient-to-t from-[#0284C7] to-[#38BDF8]' : 'bg-slate-100'}`}
+                            style={{ height: `${h}%`, animationDelay: `${i * 70}ms` }}
+                          />
+                          <span className="text-xs text-slate-500 capitalize h-4">{m.label}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
-                {/* 2. O'qituvchilar */}
-                <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs hover:shadow-md transition-shadow">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pedagoglar</span>
-                    <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                      <Users className="w-5 h-5" />
+                <div className="adm-card bg-white rounded-[28px] p-6 sm:p-7 flex flex-col">
+                  <h3 className="text-xl font-semibold font-display text-slate-900">Murojaatlarga javob</h3>
+                  <div className="relative mt-4 mx-auto w-full max-w-[280px]">
+                    <svg viewBox="0 0 200 110" className="w-full">
+                      {Array.from({ length: 13 }).map((_, i) => {
+                        const a = Math.PI - (i / 12) * Math.PI;
+                        const cx = 100 + Math.cos(a) * 78;
+                        const cy = 100 - Math.sin(a) * 78;
+                        const on = (i / 12) * 100 < answeredPct;
+                        return (
+                          <rect
+                            key={i}
+                            x={cx - 5.5} y={cy - 12} width="11" height="24" rx="4"
+                            transform={`rotate(${90 - (a * 180) / Math.PI} ${cx} ${cy})`}
+                            className="adm-seg"
+                            style={{ fill: on ? '#0284C7' : '#EEF1F6', opacity: on ? 1 - (i / 12) * 0.45 : 1, animationDelay: `${i * 60}ms` }}
+                          />
+                        );
+                      })}
+                    </svg>
+                    <div className="absolute inset-x-0 bottom-0 text-center">
+                      <div className="text-4xl font-semibold font-display text-slate-900">{answeredPct}%</div>
+                      <div className="text-[11px] text-slate-500">Ko‘rib chiqilgan</div>
                     </div>
                   </div>
-                  <div className="text-3xl font-extrabold text-slate-900">{teachersList.length || 6}</div>
-                  <div className="flex items-center justify-between text-xs text-slate-500 mt-2">
-                    <span className="text-emerald-600 font-bold">Oliy va 1-toifali</span>
-                    <span className="text-slate-400 text-[11px]">Faol ustozlar</span>
-                  </div>
-                </div>
-
-                {/* 3. Rahbariyat */}
-                <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs hover:shadow-md transition-shadow">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Maktab Ma'muriyati</span>
-                    <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
-                      <School className="w-5 h-5" />
+                  <div className="grid grid-cols-2 gap-3 mt-6">
+                    <div className="rounded-2xl bg-slate-50 p-4">
+                      <div className="text-xs text-slate-500">Ko‘rilgan</div>
+                      <div className="text-2xl font-semibold font-display mt-2">{readCount}</div>
                     </div>
-                  </div>
-                  <div className="text-3xl font-extrabold text-slate-900">{leadersList.length || 4}</div>
-                  <div className="flex items-center justify-between text-xs text-slate-500 mt-2">
-                    <span className="text-purple-600 font-bold">Direktor & o‘rinbosarlar</span>
-                    <span className="text-slate-400 text-[11px]">4 ta bo‘lim</span>
-                  </div>
-                </div>
-
-                {/* 4. Murojaatlar */}
-                <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs hover:shadow-md transition-shadow">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Kelgan Murojaatlar</span>
-                    <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                      <Mail className="w-5 h-5" />
+                    <div className="rounded-2xl bg-slate-50 p-4">
+                      <div className="text-xs text-slate-500">Yangi</div>
+                      <div className="text-2xl font-semibold font-display mt-2">{unreadMessagesCount}</div>
                     </div>
-                  </div>
-                  <div className="text-3xl font-extrabold text-slate-900">{messagesList.length || 3}</div>
-                  <div className="flex items-center justify-between text-xs text-slate-500 mt-2">
-                    <span className={`font-bold ${unreadMessagesCount > 0 ? 'text-rose-600' : 'text-slate-500'}`}>
-                      {unreadMessagesCount > 0 ? `${unreadMessagesCount} ta o‘qilmagan` : "Barchasi ko'rilgan"}
-                    </span>
-                    <span className="text-slate-400 text-[11px]">Sayt orqali</span>
                   </div>
                 </div>
               </div>
 
-              {/* Asosiy 2 ustunli tuzilma: So'nggi postlar va Yon widgetlar */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Chap 2 ustun: So'nggi materiallar jadvali */}
-                <div className="lg:col-span-2 space-y-6">
-                  <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                      <div>
-                        <h3 className="font-extrabold text-slate-900 text-base">So‘nggi nashr etilgan materiallar</h3>
-                        <p className="text-xs text-slate-500 mt-0.5">Bazada saqlangan yangilik va ta'lim maqolalari ro‘yxati</p>
-                      </div>
-                      <button
-                        onClick={() => {
-                          setActiveTab('posts');
-                          setShowNewPostModal(true);
-                        }}
-                        className="px-3.5 py-1.5 rounded-xl bg-[#0047AB] hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>Yangi post</span>
-                      </button>
-                    </div>
-
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-xs">
-                        <thead>
-                          <tr className="bg-slate-50/90 text-slate-500 border-y border-slate-200/80 font-bold uppercase tracking-wider text-[10px]">
-                            <th className="py-3 px-4">Material Sarlavhasi</th>
-                            <th className="py-3 px-4">Turi</th>
-                            <th className="py-3 px-4">Holati</th>
-                            <th className="py-3 px-4">Sana</th>
-                            <th className="py-3 px-4 text-right">Amallar</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {postsList.slice(0, 5).map((p) => (
-                            <tr key={p.id} className="hover:bg-slate-50/70 transition-colors">
-                              <td className="py-3.5 px-4 font-semibold text-slate-900 max-w-xs truncate">
-                                {p.title}
-                              </td>
-                              <td className="py-3.5 px-4">
-                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                  p.type === 'education'
-                                    ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                                    : 'bg-blue-50 text-[#0047AB] border border-blue-200'
-                                }`}>
-                                  {p.type === 'education' ? "Ta'lim" : 'Yangilik'}
-                                </span>
-                              </td>
-                              <td className="py-3.5 px-4">
-                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                  p.status === 'published'
-                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                    : 'bg-amber-50 text-amber-700 border border-amber-200'
-                                }`}>
-                                  {p.status === 'published' ? 'Nashr qilingan' : 'Qoralama'}
-                                </span>
-                              </td>
-                              <td className="py-3.5 px-4 text-slate-500 font-medium">
-                                {p.published_at ? new Date(p.published_at).toLocaleDateString('uz-UZ') : 'Bugun'}
-                              </td>
-                              <td className="py-3.5 px-4 text-right">
-                                <div className="flex items-center justify-end gap-2">
-                                  <Link
-                                    href={`/maktab-hayoti/yangiliklar/${p.slug}`}
-                                    target="_blank"
-                                    title="Saytda ko‘rish"
-                                    className="p-1.5 rounded-lg text-slate-400 hover:text-[#0047AB] hover:bg-blue-50 transition-colors"
-                                  >
-                                    <ExternalLink className="w-3.5 h-3.5" />
-                                  </Link>
-                                  <button
-                                    onClick={() => handleDeletePost(p.id, p.title)}
-                                    title="O‘chirish"
-                                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-
-                  {/* Fon Tarjima Pipeline kartasi */}
-                  <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#0047AB] flex items-center justify-center">
-                          <Layers className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <h4 className="font-extrabold text-slate-900 text-sm">Avtomatlashtirilgan Ko‘p Tilli Tizim</h4>
-                          <p className="text-xs text-slate-500">1 marta o‘zbek tilida kiritilsa, qolgan 3 tilga avtomatik moslashtiriladi</p>
-                        </div>
-                      </div>
-                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        100% Sinxron
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-                      <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/70 text-center">
-                        <div className="text-[10px] uppercase font-bold text-slate-400">O‘zbekcha (UZ)</div>
-                        <div className="font-extrabold text-sm text-[#0047AB] mt-1">Asosiy Manba</div>
-                        <div className="text-[10px] text-emerald-600 font-bold mt-0.5">● 100% Faol</div>
-                      </div>
-                      <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/70 text-center">
-                        <div className="text-[10px] uppercase font-bold text-slate-400">Qoraqalpoqcha (QQ)</div>
-                        <div className="font-extrabold text-sm text-slate-800 mt-1">Fonda Tarjima</div>
-                        <div className="text-[10px] text-emerald-600 font-bold mt-0.5">● Sinxron</div>
-                      </div>
-                      <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/70 text-center">
-                        <div className="text-[10px] uppercase font-bold text-slate-400">Ruscha (RU)</div>
-                        <div className="font-extrabold text-sm text-slate-800 mt-1">Fonda Tarjima</div>
-                        <div className="text-[10px] text-emerald-600 font-bold mt-0.5">● Sinxron</div>
-                      </div>
-                      <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/70 text-center">
-                        <div className="text-[10px] uppercase font-bold text-slate-400">Inglizcha (EN)</div>
-                        <div className="font-extrabold text-sm text-slate-800 mt-1">Fonda Tarjima</div>
-                        <div className="text-[10px] text-emerald-600 font-bold mt-0.5">● Sinxron</div>
-                      </div>
-                    </div>
-                  </div>
+              {/* So'nggi materiallar jadvali */}
+              <div className="adm-card bg-white rounded-[28px] p-6 sm:p-7">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+                  <h3 className="text-xl font-semibold font-display text-slate-900">So‘nggi materiallar</h3>
+                  <button onClick={() => setActiveTab('posts')} className="px-4 py-2 rounded-full bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-700 transition-colors flex items-center gap-1.5 self-start">
+                    Barchasi <ArrowUpRight className="w-3.5 h-3.5" />
+                  </button>
                 </div>
-
-                {/* O'ng 1 ustun: Tezkor harakatlar va Murojaatlar snippet */}
-                <div className="space-y-6">
-                  {/* Tezkor harakatlar */}
-                  <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs">
-                    <h4 className="font-extrabold text-slate-900 text-sm mb-4">Tezkor Harakatlar</h4>
-                    <div className="space-y-2.5">
-                      <button
-                        onClick={() => {
-                          setActiveTab('posts');
-                          setShowNewPostModal(true);
-                        }}
-                        className="w-full flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-blue-50/70 border border-slate-200/80 hover:border-blue-200 transition-all text-left group"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-blue-100 text-[#0047AB] flex items-center justify-center group-hover:bg-[#0047AB] group-hover:text-white transition-colors">
-                            <Plus className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <div className="text-xs font-bold text-slate-800">Yangi post yozish</div>
-                            <div className="text-[10px] text-slate-500">Yangilik yoki darslik qo‘shish</div>
-                          </div>
-                        </div>
-                        <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-[#0047AB]" />
-                      </button>
-
-                      <button
-                        onClick={() => setActiveTab('teachers')}
-                        className="w-full flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-emerald-50/70 border border-slate-200/80 hover:border-emerald-200 transition-all text-left group"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-colors">
-                            <Users className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <div className="text-xs font-bold text-slate-800">Pedagoglarni ko‘rish</div>
-                            <div className="text-[10px] text-slate-500">O‘qituvchilar va ma'muriyat</div>
-                          </div>
-                        </div>
-                        <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-600" />
-                      </button>
-
-                      <button
-                        onClick={() => setActiveTab('messages')}
-                        className="w-full flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-amber-50/70 border border-slate-200/80 hover:border-amber-200 transition-all text-left group"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center group-hover:bg-amber-600 group-hover:text-white transition-colors">
-                            <Mail className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <div className="text-xs font-bold text-slate-800">Murojaatlarni tekshirish</div>
-                            <div className="text-[10px] text-slate-500">Ota-onalar savollari</div>
-                          </div>
-                        </div>
-                        <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-amber-600" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* So'nggi murojaatlar preview */}
-                  <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="font-extrabold text-slate-900 text-sm">So‘nggi Murojaatlar</h4>
-                      <button
-                        onClick={() => setActiveTab('messages')}
-                        className="text-[11px] font-bold text-[#0047AB] hover:underline"
-                      >
-                        Barchasi →
-                      </button>
-                    </div>
-
-                    <div className="space-y-3">
-                      {messagesList.slice(0, 2).map((msg) => (
-                        <div key={msg.id} className="p-3 rounded-xl bg-slate-50 border border-slate-200/70 space-y-1.5">
-                          <div className="flex items-center justify-between">
-                            <span className="font-bold text-xs text-slate-900">{msg.full_name}</span>
-                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
-                              msg.status === 'new'
-                                ? 'bg-rose-50 text-rose-700 border border-rose-200'
-                                : 'bg-slate-200 text-slate-600'
-                            }`}>
-                              {msg.status === 'new' ? 'Yangi' : 'Ko‘rilgan'}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead>
+                      <tr className="bg-slate-50 text-slate-500 text-xs">
+                        <th className="py-3 px-4 rounded-l-2xl font-medium">Sarlavha</th>
+                        <th className="py-3 px-4 font-medium">Turi</th>
+                        <th className="py-3 px-4 font-medium">Holati</th>
+                        <th className="py-3 px-4 font-medium">Sana</th>
+                        <th className="py-3 px-4 rounded-r-2xl text-right font-medium">Amallar</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {postsList.slice(0, 5).map((p) => (
+                        <tr key={p.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/70 transition-colors">
+                          <td className="py-4 px-4 font-semibold text-slate-900 max-w-xs truncate">{p.title}</td>
+                          <td className="py-4 px-4">
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${p.type === 'education' ? 'bg-violet-50 text-violet-700' : 'bg-sky-50 text-[#0284C7]'}`}>
+                              {p.type === 'education' ? "Ta'lim" : 'Yangilik'}
                             </span>
-                          </div>
-                          <div className="text-[11px] text-slate-500 font-medium truncate">{msg.subject}</div>
-                          <div className="text-[11px] text-slate-600 line-clamp-2 italic">
-                            "{msg.message}"
-                          </div>
-                        </div>
+                          </td>
+                          <td className="py-4 px-4">
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${p.status === 'published' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                              {p.status === 'published' ? 'Nashr qilingan' : 'Qoralama'}
+                            </span>
+                          </td>
+                          <td className="py-4 px-4 text-slate-500">{p.published_at ? new Date(p.published_at).toLocaleDateString('uz-UZ') : 'Bugun'}</td>
+                          <td className="py-4 px-4 text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Link href={`/news/${p.slug}`} target="_blank" title="Saytda ko‘rish" className="p-2 rounded-full text-slate-400 hover:text-[#0284C7] hover:bg-sky-50 transition-colors">
+                                <ExternalLink className="w-4 h-4" />
+                              </Link>
+                              <button onClick={() => handleDeletePost(p.id, p.title)} title="O‘chirish" className="p-2 rounded-full text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors">
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
                       ))}
-                    </div>
-                  </div>
-
-                  {/* Baza holati mini kartasi */}
-                  <div className="bg-gradient-to-br from-slate-900 to-[#00265B] text-white rounded-2xl p-6 shadow-sm">
-                    <div className="flex items-center gap-3 mb-3">
-                      <Database className="w-5 h-5 text-blue-400" />
-                      <div className="font-bold text-sm">Supabase Cloud Baza</div>
-                    </div>
-                    <p className="text-xs text-slate-300 leading-relaxed">
-                      PostgreSQL 15 klasteri orqali ma'lumotlar real vaqtda xavfsiz sinxronlanmoqda.
-                    </p>
-                    <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs">
-                      <span className="text-slate-400">Status:</span>
-                      <span className="text-emerald-400 font-bold flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Online
-                      </span>
-                    </div>
-                  </div>
+                      {postsList.length === 0 && (
+                        <tr><td colSpan={5} className="py-10 text-center text-slate-400">Hozircha materiallar yo‘q.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
@@ -925,15 +677,8 @@ export default function AdminPage() {
                       </div>
                     </div>
 
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1.5">Muqova rasmi (URL)</label>
-                      <input
-                        type="url"
-                        value={newPost.coverImage}
-                        onChange={(e) => setNewPost({ ...newPost, coverImage: e.target.value })}
-                        placeholder="https://images.unsplash.com/..."
-                        className="w-full px-4 py-2.5 text-xs rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-[#0047AB] outline-none"
-                      />
+                    <div className="grid">
+                      <ImageUpload label="Muqova rasmi" value={newPost.coverImage} onChange={(u) => setNewPost({ ...newPost, coverImage: u })} />
                     </div>
 
                     <div>
@@ -1033,7 +778,7 @@ export default function AdminPage() {
                             <td className="py-4 px-6 text-right">
                               <div className="flex items-center justify-end gap-2">
                                 <Link
-                                  href={`/maktab-hayoti/yangiliklar/${p.slug}`}
+                                  href={`/news/${p.slug}`}
                                   target="_blank"
                                   className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-50 text-[#0047AB] hover:bg-blue-100 font-bold text-[11px] transition-colors"
                                 >
@@ -1072,7 +817,7 @@ export default function AdminPage() {
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                   }`}
                 >
-                  Rahbariyat ({leadersList.length || 4})
+                  Rahbariyat ({leadersList.length})
                 </button>
                 <button
                   onClick={() => setTeacherSubTab('teachers')}
@@ -1082,65 +827,17 @@ export default function AdminPage() {
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                   }`}
                 >
-                  Pedagoglar jamoasi ({teachersList.length || 6})
+                  O‘qituvchilar ({teachersList.length})
                 </button>
               </div>
 
-              {/* 1. Rahbariyat kartalari */}
-              {teacherSubTab === 'leaders' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {leadersList.map((leader) => (
-                    <div key={leader.id} className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs hover:shadow-md transition-shadow flex flex-col sm:flex-row gap-5">
-                      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#00265B] to-[#0047AB] text-white flex items-center justify-center font-extrabold text-xl shadow-md shadow-blue-900/10 flex-shrink-0">
-                        {leader.fullName?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || 'RM'}
-                      </div>
-                      <div className="flex-1 space-y-2">
-                        <div>
-                          <div className="font-extrabold text-slate-900 text-sm">{leader.fullName}</div>
-                          <div className="text-xs font-bold text-[#0047AB] mt-0.5">{leader.role}</div>
-                        </div>
-                        <p className="text-xs text-slate-500 leading-relaxed">{leader.bio}</p>
-                        <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center gap-3 text-[11px] text-slate-600">
-                          <span className="font-medium text-slate-500">Qabul: <b className="text-slate-800">{leader.receptionDays}</b></span>
-                          <span className="text-slate-300">•</span>
-                          <span className="font-medium text-slate-500">Tel: <b className="text-slate-800">{leader.phone}</b></span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* 2. O'qituvchilar kartalari */}
-              {teacherSubTab === 'teachers' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                  {teachersList.map((teacher) => (
-                    <div key={teacher.id} className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs hover:shadow-md transition-shadow space-y-4">
-                      <div className="flex items-center gap-3.5">
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white flex items-center justify-center font-extrabold text-sm shadow-sm flex-shrink-0">
-                          {teacher.fullName?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || 'PJ'}
-                        </div>
-                        <div>
-                          <div className="font-bold text-xs text-slate-900 leading-tight">{teacher.fullName}</div>
-                          <div className="text-[10px] font-bold text-emerald-600 mt-0.5">{teacher.category}</div>
-                        </div>
-                      </div>
-
-                      <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
-                        {teacher.bio}
-                      </p>
-
-                      <div className="pt-3 border-t border-slate-100 flex flex-wrap gap-1.5">
-                        {(teacher.subjects || [teacher.subject]).filter(Boolean).map((sub: string, i: number) => (
-                          <span key={i} className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-100 text-slate-700">
-                            {sub}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <StaffList
+                subTab={teacherSubTab}
+                leaders={leadersList}
+                teachers={teachersList}
+                onEdit={(scope, item) => setStaffEditor({ scope, item })}
+                onDelete={handleStaffDelete}
+              />
             </div>
           )}
 
@@ -1247,79 +944,20 @@ export default function AdminPage() {
               </div>
             </div>
           )}
-
-          {/* ==================== TAB 5: SETTINGS ==================== */}
-          {activeTab === 'settings' && (
-            <div className="space-y-6 max-w-4xl">
-              {/* Baza holati kartasi */}
-              <div className="bg-white border border-slate-200/90 rounded-2xl p-6 sm:p-8 shadow-xs space-y-6">
-                <div>
-                  <h3 className="font-extrabold text-slate-900 text-base">Maʼlumotlar bazasi va Tizim infratuzilmasi</h3>
-                  <p className="text-xs text-slate-500 mt-1">To‘rtko‘l ixtisoslashtirilgan maktabi rasmiy portali sozlamalari</p>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
-                    <div className="text-[11px] font-bold text-slate-400 uppercase">Bulutli Ma'lumotlar Bazasi</div>
-                    <div className="font-extrabold text-slate-900 text-sm">Supabase Cloud PostgreSQL</div>
-                    <div className="text-xs text-slate-500 truncate">https://gpnzugnjdybdtsbazzzp.supabase.co</div>
-                    <div className="pt-2">
-                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        ● REST API Ulangan
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
-                    <div className="text-[11px] font-bold text-slate-400 uppercase">Yagona Administrator</div>
-                    <div className="font-extrabold text-slate-900 text-sm">admin (SuperAdmin)</div>
-                    <div className="text-xs text-slate-500">Xavfsiz HttpOnly sessiya bilan himoyalangan</div>
-                    <div className="pt-2">
-                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-50 text-[#0047AB] border border-blue-200">
-                        ● Faol sessiya
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
-                    <div className="text-[11px] font-bold text-slate-400 uppercase">Ko‘p Tilli Tizim (i18n)</div>
-                    <div className="font-extrabold text-slate-900 text-sm">UZ, QQ, RU, EN</div>
-                    <div className="text-xs text-slate-500">Avtomatik tarjima navbati va sinxronizatsiya</div>
-                    <div className="pt-2">
-                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        ● 4 ta til faol
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
-                    <div className="text-[11px] font-bold text-slate-400 uppercase">Maktab Rekvizitlari</div>
-                    <div className="font-extrabold text-slate-900 text-sm">To‘rtko‘l tumani ixtisoslashtirilgan maktabi</div>
-                    <div className="text-xs text-slate-500">Qoraqalpog‘iston Resp., To‘rtko‘l t., Beruniy ko‘chasi, 1-uy</div>
-                    <div className="pt-2">
-                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-200 text-slate-700">
-                        Rasmiy davlat muassasasi
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Baza jadvallari va SQL schema eslatmasi */}
-              <div className="bg-white border border-slate-200/90 rounded-2xl p-6 sm:p-8 shadow-xs space-y-4">
-                <h4 className="font-extrabold text-slate-900 text-sm">Bazada mavjud bo‘lgan jadvallar</h4>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                  {['posts', 'categories', 'teachers', 'leadership', 'contact_messages', 'translation_jobs', 'translations', 'hero_slides'].map((t) => (
-                    <div key={t} className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/70 font-mono text-slate-700 text-center font-semibold">
-                      {t}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
         </main>
       </div>
+      {showProfile && (
+        <ProfileModal
+          username={adminUser?.username || 'admin'}
+          onClose={() => setShowProfile(false)}
+          onSaved={(u) => setAdminUser((x: any) => ({ ...x, username: u }))}
+        />
+      )}
+      <StaffModal
+        editor={staffEditor}
+        onClose={() => setStaffEditor(null)}
+        onSaved={(msg) => { setStaffEditor(null); setFeedback({ type: 'success', message: msg }); loadData(); }}
+      />
     </div>
   );
 }

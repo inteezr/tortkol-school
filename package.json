@@ -2,7 +2,7 @@
   "name": "tortkol-school-platform",
   "version": "1.0.0",
   "private": true,
-  "description": "To'rtko'l ixtisoslashtirilgan maktabi rasmiy veb-platformasi",
+  "description": "To'rtko'l tuman ixtisoslashtirilgan maktabi rasmiy veb-platformasi",
   "scripts": {
     "dev:web": "pnpm --filter @school/web dev",
     "dev:api": "pnpm --filter @school/api start:dev",
