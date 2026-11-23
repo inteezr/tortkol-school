@@ -100,7 +100,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
           <button
             onClick={toggleZoom}
             className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 transition-all text-white"
-            title={tr("Kattalashtirish")}
+            title={tr("Kattalaştiriş")}
           >
             {zoom === 1 ? <ZoomIn className="w-5 h-5" /> : <ZoomOut className="w-5 h-5" />}
           </button>
@@ -109,7 +109,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
           <button
             onClick={onClose}
             className="p-2.5 rounded-full bg-white/15 hover:bg-red-600 active:scale-95 transition-all text-white"
-            title={tr("Yopish (Esc)")}
+            title={tr("Yopiş (Esc)")}
           >
             <X className="w-5 h-5" />
           </button>

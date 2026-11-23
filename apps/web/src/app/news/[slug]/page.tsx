@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowLeft, Calendar, Share2, Tag, CheckCircle2 } from 'lucide-react';
 import { useLanguage, dateLocale } from '../../../lib/LanguageContext';
 import { loadJson, peekJson } from '../../../lib/api-store';
+import { postCategory, newsTagHref } from '../../../lib/post-categories';
 
 export default function YangilikDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { tr, locale } = useLanguage();
@@ -37,13 +38,13 @@ export default function YangilikDetailPage({ params }: { params: Promise<{ slug:
   const content = tr(post?.content || '');
   const coverImage = post?.cover_image || '';
   const dateFormatted = post?.published_at ? new Date(post.published_at).toLocaleDateString(dateLocale(locale)) : '';
-  const category = tr(post?.categories?.name || post?.category || '');
+  const category = postCategory(post);
 
   if (!loading && !post) {
     return (
       <div className="py-24 text-center">
         <p className="text-slate-500 mb-6">{tr("Yangilik topilmadi.")}</p>
-        <Link href="/news" className="text-blue-600 font-semibold text-sm">{tr("Yangiliklar ro'yxatiga qaytish")}</Link>
+        <Link href="/news" className="text-blue-600 font-semibold text-sm">{tr("Yangiliklar röyxatiga qaytiş")}</Link>
       </div>
     );
   }
@@ -58,16 +59,19 @@ export default function YangilikDetailPage({ params }: { params: Promise<{ slug:
             className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-blue-600 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>{tr("Yangiliklar ro'yxatiga qaytish")}</span>
+            <span>{tr("Yangiliklar röyxatiga qaytiş")}</span>
           </Link>
         </div>
 
         {/* Maqola bosh qismi */}
         <div>
           <div className="flex flex-wrap items-center gap-3 mb-4">
-            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200/50">
-              {category}
-            </span>
+            {category && (
+              <Link href={newsTagHref(category.slug)} title={tr('Şu turkumdagi postlar')}
+                className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200/50 hover:bg-blue-600 hover:text-white transition-colors">
+                {tr(category.label)}
+              </Link>
+            )}
             <div className="flex items-center gap-1.5 text-xs text-slate-400">
               <Calendar className="w-3.5 h-3.5" />
               <span>{dateFormatted}</span>
@@ -111,7 +115,7 @@ export default function YangilikDetailPage({ params }: { params: Promise<{ slug:
             ) : (
               <>
                 <Share2 className="w-4 h-4 text-slate-500" />
-                <span>{tr("Havolani ulashish")}</span>
+                <span>{tr("Havolani ulaşiş")}</span>
               </>
             )}
           </button>

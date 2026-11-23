@@ -13,3 +13,10 @@ yarn-error.log*
 pnpm-debug.log*
 test-*.js
 *.tsbuildinfo
+
+# Netlify lokal build fayllari
+.netlify
+apps/web/apps/
+
+# Claude Code chat eksportlari
+*-command-message*.txt

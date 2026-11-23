@@ -36,32 +36,32 @@ export default function AdminLoginPage() {
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || 'Login yoki parol noto‘g‘ri');
+        throw new Error(data.error || 'Login yoki parol notöğri');
       }
 
       router.push('/admin');
     } catch (err: any) {
-      toast.error(err.message || 'Tizimga kirishda xatolik yuz berdi');
+      toast.error(err.message || 'Tizimga kirişda xatolik yuz berdi');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="h-dvh w-full overflow-hidden flex flex-col justify-between items-center bg-[#F5F7FB] font-poppins p-4 sm:p-6 lg:p-8 relative">
+    <div className="h-dvh w-full overflow-hidden flex flex-col justify-between items-center bg-[#F4F8FD] font-poppins p-4 sm:p-6 lg:p-8 relative">
       {/* Yuqori qism: Orqaga qaytish va Til ko'rsatkichi */}
       <div className="w-full max-w-md flex items-center justify-between pt-2 sm:pt-4">
         <Link
           href="/"
-          className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-[#0047AB] transition-colors"
+          className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-[#052659] transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Maktab saytiga qaytish</span>
+          <span>Maktab saytiga qaytiş</span>
         </Link>
 
         <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-gray-200 text-[11px] font-semibold text-slate-600 shadow-sm">
-          <Globe className="w-3.5 h-3.5 text-[#0047AB]" />
-          <span>O‘zbekcha (UZ)</span>
+          <Globe className="w-3.5 h-3.5 text-[#052659]" />
+          <span>Özbekça (UZ)</span>
         </div>
       </div>
 
@@ -70,24 +70,21 @@ export default function AdminLoginPage() {
         <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-gray-100 relative">
           {/* Maktab logosi va nomi */}
           <div className="flex items-center gap-3.5 mb-6">
-            <div className="w-12 h-12 rounded-2xl bg-[#0047AB] text-white flex items-center justify-center font-bold shadow-md shadow-blue-500/20 flex-shrink-0">
+            <div className="w-12 h-12 rounded-2xl bg-[#052659] text-white flex items-center justify-center font-bold shadow-md shadow-blue-500/20 flex-shrink-0">
               <School className="w-6 h-6" />
             </div>
             <div>
-              <div className="font-extrabold text-sm sm:text-base text-[#1C1E26] leading-tight">
-                To‘rtko‘l tuman ixtisoslashtirilgan maktabi
-              </div>
-              <div className="text-[11px] font-semibold text-[#0047AB] uppercase tracking-wider mt-0.5">
-                PIIMA Agentligi Tizimida
+              <div className="font-extrabold text-sm sm:text-base text-[#021024] leading-tight">
+                Törtköl IM
               </div>
             </div>
           </div>
 
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1C1E26] tracking-tight">
-            Tizimga kirish
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#021024] tracking-tight">
+            Tizimga kiriş
           </h1>
           <p className="mt-1.5 text-xs text-gray-500 leading-relaxed">
-            Maktab boshqaruv tizimiga kirish uchun maʼlumotlaringizni kiriting.
+            Maktab boşqaruv tizimiga kiriş uçun maʼlumotlaringizni kiriting.
           </p>
 
           {/* Login va Parol Formasi */}
@@ -106,7 +103,7 @@ export default function AdminLoginPage() {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     placeholder="admin"
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 text-sm text-gray-900 placeholder-gray-400 focus:border-[#0047AB] focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 text-sm text-gray-900 placeholder-gray-400 focus:border-[#052659] focus:ring-2 focus:ring-blue-100 outline-none transition-all"
                   />
                 </div>
               </div>
@@ -125,7 +122,7 @@ export default function AdminLoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••••••"
-                    className="w-full pl-10 pr-11 py-2.5 rounded-xl border border-gray-300 text-sm text-gray-900 placeholder-gray-400 focus:border-[#0047AB] focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+                    className="w-full pl-10 pr-11 py-2.5 rounded-xl border border-gray-300 text-sm text-gray-900 placeholder-gray-400 focus:border-[#052659] focus:ring-2 focus:ring-blue-100 outline-none transition-all"
                   />
                   <button
                     type="button"
@@ -140,22 +137,22 @@ export default function AdminLoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full mt-2 py-3 rounded-xl bg-[#0047AB] hover:bg-blue-900 active:scale-[0.99] text-white font-semibold text-sm shadow-md shadow-blue-500/20 transition-all disabled:opacity-50"
+                className="w-full mt-2 py-3 rounded-xl bg-[#052659] hover:bg-blue-900 active:scale-[0.99] text-white font-semibold text-sm shadow-md shadow-blue-500/20 transition-all disabled:opacity-50"
               >
-                {loading ? 'Tekshirilmoqda...' : 'Tizimga kirish'}
+                {loading ? 'Tekşirilmoqda...' : 'Tizimga kiriş'}
               </button>
             </form>
 
           <div className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-center gap-1.5 text-[11px] text-gray-400">
-            <ShieldCheck className="w-3.5 h-3.5 text-[#0047AB]" />
-            <span>Xavfsiz boshqaruv tizimi</span>
+            <ShieldCheck className="w-3.5 h-3.5 text-[#052659]" />
+            <span>Xavfsiz boşqaruv tizimi</span>
           </div>
         </div>
       </div>
 
       {/* Pastki mualliflik qismi */}
       <div className="w-full max-w-md text-center pb-2 sm:pb-4 text-xs text-gray-400">
-        © {new Date().getFullYear()} PIIMA — To‘rtko‘l tuman ixtisoslashtirilgan maktabi
+        © {new Date().getFullYear()} PIIMA — Törtköl tuman ixtisoslaştirilgan maktabi
       </div>
     </div>
   );

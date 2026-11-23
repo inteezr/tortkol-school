@@ -1,24 +1,14 @@
-'use client';
-
 import React from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
 
+/** Scroll paytida silliq chiqadigan blok (ScrollReveal tomonidan boshqariladi). */
 export const Reveal: React.FC<{
   children: React.ReactNode;
+  /** soniyada */
   delay?: number;
-  y?: number;
+  from?: 'up' | 'down' | 'left' | 'right' | 'zoom';
   className?: string;
-}> = ({ children, delay = 0, y = 28, className }) => {
-  const reduce = useReducedMotion();
-  return (
-    <motion.div
-      className={className}
-      initial={reduce ? false : { opacity: 0, y }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-60px' }}
-      transition={{ duration: 0.7, delay, ease: [0.16, 1, 0.3, 1] }}
-    >
-      {children}
-    </motion.div>
-  );
-};
+}> = ({ children, delay = 0, from = 'up', className }) => (
+  <div className={className} data-reveal={from} data-reveal-delay={delay ? Math.round(delay * 1000) : undefined}>
+    {children}
+  </div>
+);

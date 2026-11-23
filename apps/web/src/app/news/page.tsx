@@ -5,10 +5,21 @@ import Link from 'next/link';
 import { useLanguage } from '../../lib/LanguageContext';
 import { loadJson } from '../../lib/api-store';
 import { ArrowUpRight, Calendar, Search } from 'lucide-react';
+import { POST_CATEGORIES, postCategory, isCategorySlug } from '../../lib/post-categories';
 
 export default function YangiliklarPage() {
   const { t, tr } = useLanguage();
-  const [selectedTag, setSelectedTag] = useState('Barchasi');
+  // 'all' yoki turkum slug'i. URL'dagi ?tag=... bilan bog'langan (havolani ulashish mumkin)
+  const [selectedTag, setSelectedTagState] = useState<string>('all');
+  React.useEffect(() => {
+    const tag = new URLSearchParams(window.location.search).get('tag');
+    if (isCategorySlug(tag)) setSelectedTagState(tag);
+  }, []);
+  const setSelectedTag = (tag: string) => {
+    setSelectedTagState(tag);
+    const url = tag === 'all' ? '/news' : `/news?tag=${tag}`;
+    window.history.replaceState(window.history.state, '', url);
+  };
   const [articles, setArticles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -21,18 +32,18 @@ export default function YangiliklarPage() {
             title: p.title,
             excerpt: p.excerpt,
             date: p.published_at ? p.published_at.slice(0, 10) : '',
-            category: p.categories?.name || p.category || '',
+            category: postCategory(p),
             imageUrl: p.cover_image || '',
           })));
         }
       }, () => setLoading(false));
   }, []);
 
-  const tags = ['Barchasi', 'Olimpiada', "Ta'lim", 'Tadbirlar', 'E’lonlar'];
+  const tags: { slug: string; label: string }[] = [{ slug: 'all', label: 'Barçasi' }, ...POST_CATEGORIES.map((c) => ({ slug: c.slug, label: c.label }))];
 
-  const filteredArticles = selectedTag === 'Barchasi'
+  const filteredArticles = selectedTag === 'all'
     ? articles
-    : articles.filter(a => a.category === selectedTag);
+    : articles.filter((a) => a.category?.slug === selectedTag);
 
   return (
     <div className="py-12 sm:py-20">
@@ -42,24 +53,25 @@ export default function YangiliklarPage() {
             {t.nav.news}
           </h1>
           <p className="mt-4 text-base sm:text-lg text-slate-600">
-            {tr("Maktabimizdagi so'nggi yangiliklar, yutuqlar va e'lonlar arxivi.")}
+            {tr("Maktabimizdagi sönggi yangiliklar, yutuqlar va e'lonlar arxivi.")}
           </p>
         </div>
 
         {/* Filtr tablari */}
         <div className="mb-12 flex flex-wrap items-center justify-between gap-4">
           <div className="flex flex-wrap gap-2">
-            {tags.map((tag) => (
+            {tags.map(({ slug, label }) => (
               <button
-                key={tag}
-                onClick={() => setSelectedTag(tag)}
+                key={slug}
+                onClick={() => setSelectedTag(slug)}
+                aria-pressed={selectedTag === slug}
                 className={`px-4 py-2 rounded-full text-xs font-semibold transition-all ${
-                  selectedTag === tag
+                  selectedTag === slug
                     ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
                     : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
                 }`}
               >
-                {tr(tag)}
+                {tr(label)}
               </button>
             ))}
           </div>
@@ -68,7 +80,7 @@ export default function YangiliklarPage() {
         {/* Yangiliklar Gridi */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {!loading && filteredArticles.length === 0 && (
-            <p className="col-span-full text-center text-slate-500 py-10">{tr("Hozircha yangiliklar yo'q.")}</p>
+            <p className="col-span-full text-center text-slate-500 py-10">{selectedTag === 'all' ? tr("Hozirça yangiliklar yöq.") : tr("Bu turkumda hozirça post yöq.")}</p>
           )}
           {filteredArticles.map((item) => (
             <Link
@@ -86,9 +98,16 @@ export default function YangiliklarPage() {
                   <div className="absolute top-3.5 right-3.5 w-9 h-9 rounded-full bg-white/90 backdrop-blur-md border border-white/80 shadow-md flex items-center justify-center text-slate-700 group-hover:bg-blue-600 group-hover:text-white transition-all">
                     <ArrowUpRight className="w-4 h-4" />
                   </div>
-                  <div className="absolute bottom-3 left-3 px-3 py-1 rounded-full text-xs font-semibold bg-white/95 backdrop-blur-md text-blue-700 shadow-sm">
-                    {tr(item.category)}
-                  </div>
+                  {item.category && (
+                    <button
+                      type="button"
+                      title={tr('Şu turkumdagi postlar')}
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSelectedTag(item.category.slug); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                      className="absolute bottom-3 left-3 px-3 py-1 rounded-full text-xs font-semibold bg-white/95 backdrop-blur-md text-blue-700 shadow-sm hover:bg-blue-600 hover:text-white transition-colors"
+                    >
+                      {tr(item.category.label)}
+                    </button>
+                  )}
                 </div>
 
                 <div className="p-6">
@@ -109,7 +128,7 @@ export default function YangiliklarPage() {
 
               <div className="px-6 pb-6 pt-2">
                 <span className="text-xs font-semibold text-blue-600">
-                  {tr("Batafsil o'qish →")}
+                  {tr("Batafsil öqiş →")}
                 </span>
               </div>
             </Link>

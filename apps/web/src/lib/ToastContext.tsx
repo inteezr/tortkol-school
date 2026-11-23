@@ -49,12 +49,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           key={toast.id}
           role="status"
           aria-live="polite"
-          className={`toast-in fixed bottom-5 right-5 z-[100] max-w-[340px] flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm font-semibold shadow-lg border ${
-            toast.type === 'success' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-rose-50 text-rose-800 border-rose-200'
+          className={`toast-in fixed bottom-20 right-5 z-[100] max-w-[340px] flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm font-semibold shadow-lg border ${
+            toast.type === 'success' ? 'bg-green-50 text-green-800 border-green-200' : 'bg-rose-50 text-rose-800 border-rose-200'
           }`}
         >
           {toast.type === 'success' ? (
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+            <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
           ) : (
             <AlertCircle className="w-5 h-5 text-rose-600 flex-shrink-0" />
           )}
@@ -63,12 +63,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       )}
 
       {ask && (
-        <div className="fixed inset-0 z-[110] bg-slate-900/40 flex items-center justify-center p-4" onMouseDown={(e) => e.target === e.currentTarget && answer(false)}>
-          <div className="toast-in bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6" role="alertdialog" aria-modal="true">
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/40" onKeyDown={(e) => e.key === 'Escape' && answer(false)}>
+          <div className="toast-in bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-sm p-6" role="alertdialog" aria-modal="true">
             <p className="text-sm font-semibold text-slate-900 leading-relaxed">{ask.message}</p>
             <div className="mt-5 flex justify-end gap-2">
-              <button onClick={() => answer(false)} className="px-4 py-2 rounded-xl border border-slate-300 text-sm font-semibold text-slate-700">Bekor qilish</button>
-              <button autoFocus onClick={() => answer(true)} className="px-4 py-2 rounded-xl bg-rose-600 text-white text-sm font-semibold">Ha, davom etish</button>
+              <button onClick={() => answer(false)} className="px-4 py-2 rounded-xl border border-slate-300 text-sm font-semibold text-slate-700">Bekor qiliş</button>
+              <button autoFocus onClick={() => answer(true)} className="px-4 py-2 rounded-xl bg-rose-600 text-white text-sm font-semibold">Ha, davom etiş</button>
             </div>
           </div>
         </div>

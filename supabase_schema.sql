@@ -263,3 +263,11 @@ CREATE TABLE IF NOT EXISTS uploads (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
 ALTER TABLE uploads ENABLE ROW LEVEL SECURITY; -- anon kalit uchun yopiq, faqat server orqali
+
+-- 3. Tezlik uchun indekslar
+CREATE INDEX IF NOT EXISTS idx_posts_list ON posts (status, type, published_at DESC) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_media_album ON media (album_id, sort_order);
+CREATE INDEX IF NOT EXISTS idx_albums_sort ON albums (sort_order, id DESC);
+CREATE INDEX IF NOT EXISTS idx_teachers_sort ON teachers (sort_order);
+CREATE INDEX IF NOT EXISTS idx_leaders_sort ON leaders (sort_order);
+CREATE INDEX IF NOT EXISTS idx_contact_created ON contact_messages (created_at DESC);

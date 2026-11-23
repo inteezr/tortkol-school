@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdmin } from '@/lib/admin-auth';
 import { getDb } from '@/lib/db';
+import { randomUUID } from 'crypto';
+import { r2Configured, r2Put } from '@/lib/r2';
 
 const MAX = 2 * 1024 * 1024; // 2 MB
 
@@ -14,19 +16,24 @@ function sniff(b: Buffer): string | null {
 }
 
 export async function POST(req: NextRequest) {
-  if (!(await getAdmin())) return NextResponse.json({ error: "Ruxsat yo'q" }, { status: 401 });
-  const db = getDb();
-  if (!db) return NextResponse.json({ error: 'DATABASE_URL sozlanmagan' }, { status: 503 });
+  if (!(await getAdmin())) return NextResponse.json({ error: "Ruxsat yöq" }, { status: 401 });
+  const useR2 = r2Configured();
+  const db = useR2 ? null : getDb(); // R2 bo'lsa baza kerak emas
+  if (!useR2 && !db) return NextResponse.json({ error: 'DATABASE_URL sozlanmagan' }, { status: 503 });
   try {
     const file = (await req.formData()).get('file');
     if (!(file instanceof File)) return NextResponse.json({ error: 'Fayl tanlanmagan' }, { status: 400 });
-    if (file.size > MAX) return NextResponse.json({ error: 'Rasm hajmi 2 MB dan oshmasligi kerak' }, { status: 413 });
+    if (file.size > MAX) return NextResponse.json({ error: 'Rasm hajmi 2 MB dan oşmasligi kerak' }, { status: 413 });
     const buf = Buffer.from(await file.arrayBuffer());
     const type = sniff(buf);
-    if (!type) return NextResponse.json({ error: 'Faqat JPG, PNG, WebP yoki GIF rasm yuklash mumkin' }, { status: 415 });
-    const [row] = await db`insert into uploads (content_type, size, data) values (${type}, ${buf.length}, ${buf}) returning id`;
+    if (!type) return NextResponse.json({ error: 'Faqat JPG, PNG, WebP yoki GIF rasm yuklaş mumkin' }, { status: 415 });
+    if (useR2) {
+      const ext = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' }[type]!;
+      return NextResponse.json({ success: true, url: await r2Put(`uploads/${randomUUID()}.${ext}`, buf, type) });
+    }
+    const [row] = await db!`insert into uploads (content_type, size, data) values (${type}, ${buf.length}, ${buf}) returning id`;
     return NextResponse.json({ success: true, url: `/api/files/${row.id}` });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Yuklab bo‘lmadi' }, { status: 500 });
+    return NextResponse.json({ error: err.message || 'Yuklab bölmadi' }, { status: 500 });
   }
 }

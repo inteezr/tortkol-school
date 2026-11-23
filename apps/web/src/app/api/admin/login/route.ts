@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
 
     if (!username || !password) {
       return NextResponse.json(
-        { error: 'Login va parol kiritilishi shart' },
+        { error: 'Login va parol kiritilişi şart' },
         { status: 400 }
       );
     }
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json(
-      { error: 'Login yoki parol noto‘g‘ri!' },
+      { error: 'Login yoki parol notöğri!' },
       { status: 401 }
     );
   } catch (err) {

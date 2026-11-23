@@ -12,17 +12,17 @@ export default function AniqFanlarPage() {
     {
       name: "Matematika (Chuqurlashtirilgan)",
       hours: "Haftasiga 8 soat",
-      topics: ["Algebra va matematik analiz asoslari", "Planimetriya va stereometriya", "Kombinatorika va ehtimollar nazariyasi", "Olimpiada masalalari yechish metodikasi"],
+      topics: ["Algebra va matematik analiz asoslari", "Planimetriya va stereometriya", "Kombinatorika va ehtimollar nazariyasi", "Olimpiada masalalari yeçiş metodikasi"],
     },
     {
       name: "Fizika (Chuqurlashtirilgan)",
       hours: "Haftasiga 6 soat",
-      topics: ["Mexanika va kinematika", "Molekulyar fizika va termodinamika", "Elektrodinamika va optika", "Laboratoriya tajribalari va fizik o'lchovlar"],
+      topics: ["Mexanika va kinematika", "Molekulyar fizika va termodinamika", "Elektrodinamika va optika", "Laboratoriya tajribalari va fizik ölçovlar"],
     },
     {
       name: "Ingliz tili (Akademik)",
       hours: "Haftasiga 5 soat",
-      topics: ["Akademik yozish va nutq", "Grammatika va matn tahlili", "IELTS imtihoniga tayyorgarlik", "Ilmiy maqolalar bilan ishlash"],
+      topics: ["Akademik yoziş va nutq", "Grammatika va matn tahlili", "IELTS imtihoniga tayyorgarlik", "Ilmiy maqolalar bilan işlaş"],
     },
   ];
 
@@ -70,17 +70,17 @@ export default function AniqFanlarPage() {
         <div className="p-8 sm:p-12 rounded-3xl bg-blue-50 border border-blue-100 flex flex-col sm:flex-row items-center justify-between gap-6">
           <div>
             <h3 className="text-2xl font-bold text-slate-900 mb-2">
-              {tr("Aniq fanlar yo'nalishiga qabul")}
+              {tr("Aniq fanlar yönalişiga qabul")}
             </h3>
             <p className="text-sm text-slate-600 max-w-xl">
-              {tr("Imtihonlar matematika va fizika fanlaridan saralash testlari asosida amalga oshiriladi.")}
+              {tr("Imtihonlar matematika va fizika fanlaridan saralaş testlari asosida amalga oşiriladi.")}
             </p>
           </div>
           <Link
             href="/admission"
             className="px-7 py-3.5 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm shadow-md shadow-blue-500/20 whitespace-nowrap active:scale-95 transition-all"
           >
-            {tr("Qabul tartibi bilan tanishish →")}
+            {tr("Qabul tartibi bilan tanişiş →")}
           </Link>
         </div>
       </div>

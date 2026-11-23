@@ -1,39 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import { unstable_cache, revalidateTag } from 'next/cache';
+import { getPublicData } from '@/lib/public-data';
+import { invalidate } from '@/lib/invalidate';
 import { z } from 'zod';
 import { getDb } from '@/lib/db';
 import { getAdmin } from '@/lib/admin-auth';
 
-const fetchRows = unstable_cache(
-  async (key: string) => {
-    const { data, error } = await supabase!.from(key).select('*').order('sort_order', { ascending: true });
-    return { data: data || [], error: error?.message ?? null };
-  },
-  ['staff'],
-  { revalidate: 300, tags: ['staff'] }
-);
-
-const CACHE = { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600' };
+// CDN'da uzoq keshlanmaydi: aks holda admin o'zgarishlari saytga kechikib yetadi. Server keshi (teglar) bazani himoya qiladi.
+const CACHE = { 'Cache-Control': 'public, max-age=0, must-revalidate' };
 
 export async function GET(req: NextRequest) {
-  const scope = new URL(req.url).searchParams.get('scope'); // 'leaders' | 'teachers'
-  const key = scope === 'leaders' ? 'leaders' : 'teachers';
-
-  if (!isSupabaseConfigured || !supabase) {
-    return NextResponse.json({ [key]: [], isLiveDatabase: false }, { headers: CACHE });
+  const key = new URL(req.url).searchParams.get('scope') === 'leaders' ? 'leaders' : 'teachers';
+  try {
+    const data = await getPublicData();
+    return NextResponse.json({ [key]: data[key] }, { headers: CACHE });
+  } catch (e: any) {
+    console.error(`${key} fetch error:`, e?.message);
+    return NextResponse.json({ [key]: [], error: e?.message || 'Xatolik' }, { status: 502, headers: { 'Cache-Control': 'no-store' } });
   }
-
-  const { data, error } = await fetchRows(key);
-
-  if (error) {
-    console.error(`Supabase ${key} fetch error:`, error);
-    return NextResponse.json({ [key]: [], error }, { status: 500 });
-  }
-  return NextResponse.json({ [key]: data || [] }, { headers: CACHE });
 }
 
-const opt = (max: number) => z.string().trim().max(max).optional().transform(v => v || '');
+// Baza bo'sh maydonlar uchun null qaytaradi: null/undefined ni bo'sh matn sifatida qabul qilamiz.
+const opt = (max: number) => z.string().trim().max(max).nullish().transform(v => v || '');
 const teacherSchema = z.object({
   full_name: z.string().trim().min(3, 'Ism-familiya kamida 3 belgi').max(150),
   subject: z.string().trim().min(2, 'Fanni kiriting').max(150),
@@ -55,7 +42,7 @@ const leaderSchema = z.object({
 });
 
 async function guard(req: NextRequest) {
-  if (!(await getAdmin())) return { err: NextResponse.json({ error: "Ruxsat yo'q" }, { status: 401 }) };
+  if (!(await getAdmin())) return { err: NextResponse.json({ error: "Ruxsat yöq" }, { status: 401 }) };
   const db = getDb();
   if (!db) return { err: NextResponse.json({ error: 'DATABASE_URL sozlanmagan' }, { status: 503 }) };
   const scope = new URL(req.url).searchParams.get('scope') === 'leaders' ? 'leaders' : 'teachers';
@@ -63,7 +50,7 @@ async function guard(req: NextRequest) {
 }
 const fail = (e: any) =>
   e instanceof z.ZodError
-    ? NextResponse.json({ error: e.errors[0]?.message || "Ma'lumotlar noto'g'ri" }, { status: 400 })
+    ? NextResponse.json({ error: e.errors[0]?.message || "Ma'lumotlar notöğri" }, { status: 400 })
     : NextResponse.json({ error: e.message || 'Server xatoligi' }, { status: 500 });
 
 // Yaratish: POST /api/teachers?scope=teachers|leaders
@@ -84,7 +71,7 @@ export async function POST(req: NextRequest) {
         values (${v.full_name}, ${v.role}, ${v.reception_days}, ${v.phone || null}, ${v.email || null}, ${v.bio}, ${v.photo_url},
           (select coalesce(max(sort_order), 0) + 1 from leaders)) returning *`;
     }
-    revalidateTag('staff');
+    invalidate('staff');
     return NextResponse.json({ success: true, item: row });
   } catch (e) { return fail(e); }
 }
@@ -110,7 +97,7 @@ export async function PUT(req: NextRequest) {
         where id=${id} returning *`;
     }
     if (!row) return NextResponse.json({ error: 'Topilmadi' }, { status: 404 });
-    revalidateTag('staff');
+    invalidate('staff');
     return NextResponse.json({ success: true, item: row });
   } catch (e) { return fail(e); }
 }
@@ -124,7 +111,7 @@ export async function DELETE(req: NextRequest) {
     if (!id) return NextResponse.json({ error: 'ID talab qilinadi' }, { status: 400 });
     if (g.scope === 'teachers') await g.db`delete from teachers where id=${id}`;
     else await g.db`delete from leaders where id=${id}`;
-    revalidateTag('staff');
+    invalidate('staff');
     return NextResponse.json({ success: true });
   } catch (e) { return fail(e); }
 }

@@ -17,12 +17,12 @@ export default function TabiiyFanlarPage() {
     {
       name: "Kimyo (Chuqurlashtirilgan)",
       hours: "Haftasiga 6 soat",
-      topics: ["Umumiy va noorganik kimyo", "Organik kimyo va bioorganik birikmalar", "Kimyoviy hisoblashlar va laboratoriya tahlili", "Olimpiada masalalari yechish"],
+      topics: ["Umumiy va noorganik kimyo", "Organik kimyo va bioorganik birikmalar", "Kimyoviy hisoblaşlar va laboratoriya tahlili", "Olimpiada masalalari yeçiş"],
     },
     {
       name: "Ingliz tili (Akademik)",
       hours: "Haftasiga 5 soat",
-      topics: ["Tibbiy va biologik terminologiya", "Xalqaro ilmiy jurnallar tahlili", "IELTS va CEFR imtihonlariga tayyorgarlik", "Ilmiy prezentatsiyalar tayyorlash"],
+      topics: ["Tibbiy va biologik terminologiya", "Xalqaro ilmiy jurnallar tahlili", "IELTS va CEFR imtihonlariga tayyorgarlik", "Ilmiy prezentatsiyalar tayyorlaş"],
     },
   ];
 
@@ -70,17 +70,17 @@ export default function TabiiyFanlarPage() {
         <div className="p-8 sm:p-12 rounded-3xl bg-emerald-50 border border-emerald-100 flex flex-col sm:flex-row items-center justify-between gap-6">
           <div>
             <h3 className="text-2xl font-bold text-slate-900 mb-2">
-              {tr("Tabiiy fanlar yo'nalishiga qabul")}
+              {tr("Tabiiy fanlar yönalişiga qabul")}
             </h3>
             <p className="text-sm text-slate-600 max-w-xl">
-              {tr("Tibbiyot, biotexnologiya va ekologiya sohalari uchun fundamental poydevor.")}
+              {tr("Tibbiyot, biotexnologiya va ekologiya sohalari uçun fundamental poydevor.")}
             </p>
           </div>
           <Link
             href="/admission"
             className="px-7 py-3.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-md shadow-emerald-500/20 whitespace-nowrap active:scale-95 transition-all"
           >
-            {tr("Qabul tartibi bilan tanishish →")}
+            {tr("Qabul tartibi bilan tanişiş →")}
           </Link>
         </div>
       </div>

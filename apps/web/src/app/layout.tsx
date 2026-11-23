@@ -1,35 +1,49 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import { Onest, Bricolage_Grotesque } from 'next/font/google';
 
-const onest = Onest({ subsets: ['latin', 'latin-ext', 'cyrillic'], display: 'swap', variable: '--font-onest' });
-const bricolage = Bricolage_Grotesque({ subsets: ['latin', 'latin-ext'], display: 'swap', variable: '--font-display' });
 import { LanguageProvider } from '../lib/LanguageContext';
 import { ToastProvider } from '../lib/ToastContext';
 import { MainLayout } from '../components/MainLayout';
+import { DataSeed } from '../components/DataSeed';
+import { getPublicDataSafe } from '../lib/public-data';
+
+// Sahifalar oldindan tayyorlanadi (CDN'dan darhol). Admin o'zgarishi bo'lsa darhol yangilanadi (teglar),
+// bu qiymat — faqat zaxira yangilanish oralig'i.
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: "To'rtko'l tuman ixtisoslashtirilgan maktabi | Rasmiy veb-platformasi",
-  description: "Qoraqalpog'iston Respublikasi To'rtko'l tuman ixtisoslashtirilgan maktabining rasmiy veb-sayti va platformasi.",
-  keywords: ["To'rtko'l maktabi", "ixtisoslashtirilgan maktab", "aniq fanlar", "tabiiy fanlar", "piima", "qabul"],
+  title: "Törtköl tuman ixtisoslaştirilgan maktabi | Rasmiy veb-platformasi",
+  description: "Qoraqalpoğiston Respublikasi Törtköl tuman ixtisoslaştirilgan maktabining rasmiy veb-sayti va platformasi.",
+  keywords: ["Törtköl maktabi", "ixtisoslaştirilgan maktab", "aniq fanlar", "tabiiy fanlar", "piima", "qabul"],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Ommaviy ma'lumot serverda bir marta olinadi va sahifa bilan birga yuboriladi (brauzer bazani kutmaydi).
+  const data = await getPublicDataSafe();
+  const seed = data && {
+    '/api/posts': { posts: data.posts },
+    '/api/teachers?scope=leaders': { leaders: data.leaders },
+    '/api/teachers?scope=teachers': { teachers: data.teachers },
+    '/api/gallery': { albums: data.albums },
+    '/api/site-settings': data.settings,
+  };
   return (
-    <html lang="uz" className={`${onest.variable} ${bricolage.variable}`}>
+    <html lang="uz">
       <head>
         <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="" />
       </head>
-      <body className="min-h-screen flex flex-col bg-[#F7FAFF] text-[#0F172A] antialiased">
+      <body className="min-h-screen flex flex-col bg-[#F3F8FE] text-[#021024] antialiased">
         <LanguageProvider>
           <ToastProvider>
-            <MainLayout>
-              {children}
-            </MainLayout>
+            <DataSeed entries={seed}>
+              <MainLayout>
+                {children}
+              </MainLayout>
+            </DataSeed>
           </ToastProvider>
         </LanguageProvider>
       </body>

@@ -37,10 +37,10 @@ export default function BoglanishPage() {
         throw new Error(data.error || 'Xatolik yuz berdi');
       }
 
-      toast.success('Murojaatingiz qabul qilindi. Tez orada bog‘lanamiz!');
+      toast.success('Murojaatingiz qabul qilindi. Tez orada boğlanamiz!');
       setFormData({ fullName: '', phone: '', email: '', message: '' });
     } catch (err: any) {
-      toast.error(err.message || 'Murojaat yuborishda xatolik yuz berdi');
+      toast.error(err.message || 'Murojaat yuborişda xatolik yuz berdi');
     } finally {
       setLoading(false);
     }
@@ -51,10 +51,10 @@ export default function BoglanishPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto mb-16">
           <h1 className="text-4xl sm:text-5xl font-extrabold text-slate-900 tracking-tight">
-            {tr("Biz bilan bog'lanish")}
+            {tr("Biz bilan boğlaniş")}
           </h1>
           <p className="mt-4 text-base sm:text-lg text-slate-600">
-            {tr("Maktab ma'muriyati bilan aloqa o'rnatish, qabul yoki ta'lim bo'yicha savollaringizni yuborishingiz mumkin.")}
+            {tr("Maktab ma'muriyati bilan aloqa örnatiş, qabul yoki ta'lim böyiça savollaringizni yuborişingiz mumkin.")}
           </p>
         </div>
 
@@ -73,7 +73,7 @@ export default function BoglanishPage() {
                   </div>
                   <div>
                     <div className="font-semibold text-slate-900 text-sm">{tr("Manzilimiz:")}</div>
-                    <div className="mt-0.5 text-xs text-slate-500">{tr("Qoraqalpog'iston Respublikasi, To'rtko'l tumani, Mustaqillik ko'chasi")}</div>
+                    <div className="mt-0.5 text-xs text-slate-500">{tr("Qoraqalpoğiston Respublikasi, Törtköl tumani, Mustaqillik köçasi")}</div>
                   </div>
                 </div>
 
@@ -92,7 +92,7 @@ export default function BoglanishPage() {
                     <Mail className="w-5 h-5" />
                   </div>
                   <div>
-                    <div className="font-semibold text-slate-900 text-sm">{tr("Elektron pochta:")}</div>
+                    <div className="font-semibold text-slate-900 text-sm">{tr("Elektron poçta:")}</div>
                     <div className="mt-0.5 text-xs text-slate-500">info@tortkol-maktab.uz</div>
                   </div>
                 </div>
@@ -102,19 +102,38 @@ export default function BoglanishPage() {
                     <Clock className="w-5 h-5" />
                   </div>
                   <div>
-                    <div className="font-semibold text-slate-900 text-sm">{tr("Ish vaqti:")}</div>
-                    <div className="mt-0.5 text-xs text-slate-500">{tr("Dushanba - Shanba: 08:00 - 17:00 (Yakshanba dam olish kuni)")}</div>
+                    <div className="font-semibold text-slate-900 text-sm">{tr("Iş vaqti:")}</div>
+                    <div className="mt-0.5 text-xs text-slate-500">{tr("Duşanba - Şanba: 08:00 - 17:00 (Yakşanba dam oliş kuni)")}</div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Xarita kartasi */}
-            <div className="card-bento p-6 aspect-[16/9] bg-slate-100 flex items-center justify-center text-center text-slate-400 text-xs">
-              <div>
-                <MapPin className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-                <div className="font-semibold text-slate-700">{tr("To'rtko'l tuman ixtisoslashtirilgan maktabi lokatsiyasi")}</div>
-                <div>{tr("Xarita koordinatasi: 41.5542° N, 60.9984° E")}</div>
+            {/* Xarita: Google Maps sayt ichida kichik oynada (iframe) ochiladi */}
+            <div className="card-bento overflow-hidden">
+              <div className="relative aspect-[16/9] bg-slate-100">
+                <iframe
+                  title={tr("Törtköl tuman ixtisoslaştirilgan maktabi lokatsiyasi")}
+                  src="https://maps.google.com/maps?q=41.5403379,60.9989241&z=17&hl=uz&output=embed"
+                  className="absolute inset-0 w-full h-full border-0"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  allowFullScreen
+                />
+              </div>
+              <div className="p-4 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 min-w-0 text-sm font-semibold text-slate-800">
+                  <MapPin className="w-4 h-4 text-blue-600 shrink-0" />
+                  <span className="truncate">{tr("Törtköl tuman ixtisoslaştirilgan maktabi lokatsiyasi")}</span>
+                </div>
+                <a
+                  href="https://maps.app.goo.gl/kZ4r3LojNrS27kc67"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="shrink-0 text-xs font-semibold text-blue-600 hover:underline"
+                >
+                  {tr("Google Maps'da oçiş")}
+                </a>
               </div>
             </div>
           </div>
@@ -122,7 +141,7 @@ export default function BoglanishPage() {
           {/* O'ng ustun: Murojaat formasi */}
           <div className="card-bento p-8 sm:p-10">
             <h3 className="text-2xl font-bold text-slate-900 mb-2">
-              {tr("Onlayn murojaat yuborish")}
+              {tr("Onlayn murojaat yuboriş")}
             </h3>
             <p className="text-xs text-slate-500 mb-8">
               {tr("Savol, taklif yoki fikr-mulohazangizni yozib qoldiring. Ma'muriyat qisqa fursatda javob beradi.")}
@@ -131,7 +150,7 @@ export default function BoglanishPage() {
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                    {tr("Ism-sharifingiz")} <span className="text-red-500">*</span>
+                    {tr("Ism-şarifingiz")} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -189,9 +208,9 @@ export default function BoglanishPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full flex items-center justify-center gap-2 py-3.5 rounded-full bg-gradient-to-r from-[#0284C7] via-[#0EA5E9] to-[#38BDF8] hover:from-[#0369A1] hover:to-[#0284C7] disabled:opacity-50 text-white font-bold text-sm shadow-md shadow-sky-500/25 active:scale-95 transition-all"
+                  className="w-full flex items-center justify-center gap-2 py-3.5 rounded-full bg-gradient-to-r from-[#031A3F] via-[#052659] to-[#5483B3] hover:from-[#021024] hover:to-[#031A3F] disabled:opacity-50 text-white font-bold text-sm shadow-md shadow-sky-500/25 active:scale-95 transition-all"
                 >
-                  <span>{loading ? 'Yuborilmoqda...' : 'Murojaatni yuborish'}</span>
+                  <span>{loading ? 'Yuborilmoqda...' : 'Murojaatni yuboriş'}</span>
                   <Send className="w-4 h-4" />
                 </button>
               </form>

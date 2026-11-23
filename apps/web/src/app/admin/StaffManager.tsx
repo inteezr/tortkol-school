@@ -9,7 +9,7 @@ import { useToast } from '../../lib/ToastContext';
 export type StaffScope = 'teachers' | 'leaders';
 export type StaffEditor = { scope: StaffScope; item: any | null } | null;
 
-const input = 'mt-1.5 w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-normal text-slate-900 outline-none focus:border-[#0047AB] focus:ring-2 focus:ring-blue-100';
+const input = 'mt-1.5 w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm font-normal text-slate-900 outline-none transition focus:bg-white focus:border-[#052659] focus:ring-4 focus:ring-[#052659]/10';
 
 export function StaffList({
   subTab, leaders, teachers, onEdit, onDelete,
@@ -23,7 +23,7 @@ export function StaffList({
   const isL = subTab === 'leaders';
   const items = isL ? leaders : teachers;
   if (!items.length) {
-    return <p className="text-sm text-slate-500 py-10 text-center">{isL ? 'Hali rahbar qo‘shilmagan. Yuqoridagi “Rahbar qo‘shish” tugmasini bosing.' : 'Hali o‘qituvchi qo‘shilmagan. Yuqoridagi “O‘qituvchi qo‘shish” tugmasini bosing.'}</p>;
+    return <p className="text-sm text-slate-500 py-10 text-center">{isL ? 'Hali rahbar qöşilmagan. Yuqoridagi “Rahbar qöşiş” tugmasini bosing.' : 'Hali öqituvçi qöşilmagan. Yuqoridagi “Öqituvçi qöşiş” tugmasini bosing.'}</p>;
   }
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -51,7 +51,7 @@ const empty = (scope: StaffScope) =>
     ? { full_name: '', subject: '', category: '', experience: '', bio: '', education: '', achievements: '', photo_url: '' }
     : { full_name: '', role: '', reception_days: '', phone: '', email: '', bio: '', photo_url: '' };
 
-export function StaffModal({ editor, onClose, onSaved }: { editor: StaffEditor; onClose: () => void; onSaved: (msg: string) => void }) {
+export function StaffModal({ editor, onClose, onSaved }: { editor: StaffEditor; onClose: () => void; onSaved: (msg: string, scope: StaffScope, row: any) => void }) {
   const [form, setForm] = useState<any>({});
   const [busy, setBusy] = useState(false);
   const toast = useToast();
@@ -75,18 +75,18 @@ export function StaffModal({ editor, onClose, onSaved }: { editor: StaffEditor; 
         body: JSON.stringify(form),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Saqlab bo‘lmadi');
-      onSaved(item ? 'Maʼlumotlar yangilandi' : isT ? 'O‘qituvchi qo‘shildi' : 'Rahbar qo‘shildi');
+      if (!res.ok) throw new Error(data.error || 'Saqlab bölmadi');
+      onSaved(item ? 'Maʼlumotlar yangilandi' : isT ? 'Öqituvçi qöşildi' : 'Rahbar qöşildi', scope, data.item);
     } catch (err: any) { toast.error(err.message); } finally { setBusy(false); }
   };
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/50 flex items-center justify-center p-4" onMouseDown={e => e.target === e.currentTarget && onClose()}>
-      <form onSubmit={submit} className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 sm:p-8 space-y-4">
+      <form onSubmit={submit} className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 sm:p-8 space-y-4">
         <div className="flex items-start justify-between">
           <div>
-            <h3 className="text-lg font-extrabold text-slate-900">{item ? 'Tahrirlash' : isT ? 'O‘qituvchi qo‘shish' : 'Rahbar qo‘shish'}</h3>
-            <p className="text-xs text-slate-500 mt-1">{isT ? 'Ism, fan va tajriba kartada ko‘rinadi. Qolgan maʼlumotlar karta bosilganda chiqadi.' : 'Rahbariyat sahifasida ko‘rinadigan maʼlumotlar.'}</p>
+            <h3 className="text-lg font-extrabold text-slate-900">{item ? 'Tahrirlaş' : isT ? 'Öqituvçi qöşiş' : 'Rahbar qöşiş'}</h3>
+            <p className="text-xs text-slate-500 mt-1">{isT ? 'Ism, fan va tajriba kartada körinadi. Qolgan maʼlumotlar karta bosilganda çiqadi.' : 'Rahbariyat sahifasida körinadigan maʼlumotlar.'}</p>
           </div>
           <button type="button" onClick={onClose} className="p-1.5 rounded-full hover:bg-slate-100"><X className="w-4 h-4" /></button>
         </div>
@@ -99,14 +99,14 @@ export function StaffModal({ editor, onClose, onSaved }: { editor: StaffEditor; 
               <label className="block text-xs font-bold text-slate-700">Tajribasi<input value={form.experience || ''} onChange={set('experience')} placeholder="12 yil" className={input} /></label>
               <label className="block text-xs font-bold text-slate-700">Toifasi<input value={form.category || ''} onChange={set('category')} placeholder="Oliy toifa" className={input} /></label>
               <ImageUpload label="Rasm" value={form.photo_url || ''} onChange={(u) => setForm({ ...form, photo_url: u })} />
-              <label className="block text-xs font-bold text-slate-700 sm:col-span-2">Qisqacha tavsif<textarea rows={2} value={form.bio || ''} onChange={set('bio')} className={input} /></label>
+              <label className="block text-xs font-bold text-slate-700 sm:col-span-2">Qisqaça tavsif<textarea rows={2} value={form.bio || ''} onChange={set('bio')} className={input} /></label>
               <label className="block text-xs font-bold text-slate-700 sm:col-span-2">Ma’lumoti (batafsil)<textarea rows={3} value={form.education || ''} onChange={set('education')} placeholder="Oliy ta’lim, universitet, yil..." className={input} /></label>
-              <label className="block text-xs font-bold text-slate-700 sm:col-span-2">Yutuqlari (batafsil)<textarea rows={3} value={form.achievements || ''} onChange={set('achievements')} placeholder="Mukofotlar, o‘quvchilar natijalari..." className={input} /></label>
+              <label className="block text-xs font-bold text-slate-700 sm:col-span-2">Yutuqlari (batafsil)<textarea rows={3} value={form.achievements || ''} onChange={set('achievements')} placeholder="Mukofotlar, öquvçilar natijalari..." className={input} /></label>
             </>
           ) : (
             <>
               <label className="block text-xs font-bold text-slate-700">Lavozimi *<input required value={form.role || ''} onChange={set('role')} placeholder="Maktab direktori" className={input} /></label>
-              <label className="block text-xs font-bold text-slate-700">Qabul kunlari *<input required value={form.reception_days || ''} onChange={set('reception_days')} placeholder="Dushanba, Chorshanba 10:00–12:00" className={input} /></label>
+              <label className="block text-xs font-bold text-slate-700">Qabul kunlari *<input required value={form.reception_days || ''} onChange={set('reception_days')} placeholder="Duşanba, Çorşanba 10:00–12:00" className={input} /></label>
               <label className="block text-xs font-bold text-slate-700">Telefon<input value={form.phone || ''} onChange={set('phone')} className={input} /></label>
               <label className="block text-xs font-bold text-slate-700">Email<input type="email" value={form.email || ''} onChange={set('email')} className={input} /></label>
               <ImageUpload label="Rasm" value={form.photo_url || ''} onChange={(u) => setForm({ ...form, photo_url: u })} />
@@ -116,9 +116,9 @@ export function StaffModal({ editor, onClose, onSaved }: { editor: StaffEditor; 
         </div>
 
         <div className="flex justify-end gap-2 pt-2">
-          <button type="button" onClick={onClose} className="px-5 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold text-slate-700">Bekor qilish</button>
-          <button type="submit" disabled={busy} className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-semibold disabled:opacity-50 flex items-center gap-2">
-            {busy && <Loader2 className="w-4 h-4 animate-spin" />}{item ? 'Saqlash' : 'Qo‘shish'}
+          <button type="button" onClick={onClose} className="px-5 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold text-slate-700">Bekor qiliş</button>
+          <button type="submit" disabled={busy} className="px-5 py-2.5 rounded-xl bg-[#052659] hover:bg-[#031A3F] text-white text-sm font-semibold disabled:opacity-50 flex items-center gap-2">
+            {busy && <Loader2 className="w-4 h-4 animate-spin" />}{item ? 'Saqlaş' : 'Qöşiş'}
           </button>
         </div>
       </form>

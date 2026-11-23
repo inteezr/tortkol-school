@@ -5,6 +5,9 @@ import { SupportedLocale, DEFAULT_LOCALE, SUPPORTED_LOCALES } from '@school/shar
 import { translations, TranslationDictionary } from './translations';
 import { lookupPhrase, normPhrase } from './phrases';
 import { prefetchAll } from './api-store';
+import { toNewAlphabet, toOldAlphabet, deepToNew, fixSchoolName } from './alphabet';
+
+const UZ_NEW = deepToNew(translations.uz);
 
 interface LanguageContextType {
   locale: SupportedLocale;
@@ -17,8 +20,8 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType>({
   locale: DEFAULT_LOCALE,
   setLocale: () => {},
-  t: translations[DEFAULT_LOCALE],
-  tr: (s) => s ?? '',
+  t: UZ_NEW,
+  tr: (s) => toNewAlphabet(s ?? ''),
 });
 
 const STORE = 'school_tr_cache_v1';
@@ -51,6 +54,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   useEffect(() => {
     const w = window as any;
+    if (window.location.pathname.startsWith('/admin')) return; // admin panelda ommaviy sayt ma'lumotlari kerak emas
     const run = () => prefetchAll();
     if (w.requestIdleCallback) w.requestIdleCallback(run, { timeout: 1500 }); else setTimeout(run, 300);
   }, []);
@@ -89,13 +93,17 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const tr = useCallback(
     (text: string | null | undefined): string => {
       if (!text) return text ?? '';
-      if (locale === DEFAULT_LOCALE || !/\p{L}/u.test(text) || /^\s*(https?:\/\/|[\w.+-]+@[\w-]+\.)\S*\s*$/.test(text)) return text;
+      // O'zbek tili — yangi alifboda ko'rsatiladi (bazadagi eski yozuvlar ham)
+      if (locale === 'uz') return toNewAlphabet(text);
+      if (!/\p{L}/u.test(text) || /^\s*(https?:\/\/|[\w.+-]+@[\w-]+\.)\S*\s*$/.test(text)) return text;
+      // Lug'at va tarjima xizmatlari eski yozuvdagi matnni kutadi
+      text = toOldAlphabet(text);
       const key = normPhrase(text);
       const known = lookupPhrase(key, locale);
-      if (known) return known;
+      if (known) return fixSchoolName(known);
       const ck = `${locale}|${text.trim()}`;
       const hit = cache.get(ck);
-      if (hit) return hit;
+      if (hit) return fixSchoolName(hit);
       if (typeof window !== 'undefined' && !failed.current.has(ck) && !pending.current.has(text.trim())) {
         pending.current.add(text.trim());
         if (timer.current) clearTimeout(timer.current);
@@ -109,7 +117,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Birinchi renderdan keyin keshni ochish
   useEffect(() => { loadStore(); setVersion((v) => v + 1); }, [locale]);
 
-  const t = translations[locale] || translations[DEFAULT_LOCALE];
+  const t = locale === 'uz' ? UZ_NEW : (translations[locale] || UZ_NEW);
 
   return (
     <LanguageContext.Provider value={{ locale, setLocale, t, tr }}>

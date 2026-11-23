@@ -1,5 +1,6 @@
 import { createHash } from 'crypto';
 import { getDb } from './db';
+import { toOldAlphabet, fixSchoolName } from './alphabet';
 
 export type TargetLocale = 'qq' | 'ru' | 'en';
 export const TARGETS: TargetLocale[] = ['qq', 'ru', 'en'];
@@ -57,7 +58,7 @@ async function viaGemini(texts: string[], locale: TargetLocale): Promise<string[
     method: 'POST',
     headers: { 'x-goog-api-key': key, 'content-type': 'application/json' },
     body: JSON.stringify({
-      systemInstruction: { parts: [{ text: `You translate website content of an Uzbek school from Uzbek into ${NAMES[locale]}. Input is a JSON array of strings. Return ONLY a JSON array of the same length with the translations, same order. Keep names of people, numbers, emails, phone numbers and URLs unchanged. The school name \"To‘rtko‘l tuman ixtisoslashtirilgan maktabi\" (also written To'rtko'l) must always stay exactly as is, never translated or transliterated. Keep line breaks. Do not add commentary.` }] },
+      systemInstruction: { parts: [{ text: `You translate website content of an Uzbek school from Uzbek into ${NAMES[locale]}. Input is a JSON array of strings. Return ONLY a JSON array of the same length with the translations, same order. Keep names of people, numbers, emails, phone numbers and URLs unchanged. The school name \"Törtköl tuman ixtisoslaştirilgan maktabi\" (also written To‘rtko‘l tuman ixtisoslashtirilgan maktabi) must always be written exactly as \"Törtköl tuman ixtisoslaştirilgan maktabi\", never translated or transliterated. Keep line breaks. Do not add commentary.` }] },
       contents: [{ role: 'user', parts: [{ text: JSON.stringify(texts) }] }],
       generationConfig: { responseMimeType: 'application/json', temperature: 0.2 },
     }),
@@ -79,7 +80,7 @@ async function viaClaude(texts: string[], locale: TargetLocale): Promise<string[
     body: JSON.stringify({
       model: process.env.TRANSLATE_MODEL || 'claude-haiku-5-5',
       max_tokens: 8000,
-      system: `You translate website content of an Uzbek school from Uzbek into ${NAMES[locale]}. Input is a JSON array of strings. Return ONLY a JSON array of the same length with the translations, same order. Keep names of people, numbers, emails, phone numbers and URLs unchanged. The school name \"To‘rtko‘l tuman ixtisoslashtirilgan maktabi\" (also written To'rtko'l) must always stay exactly as is, never translated or transliterated. Keep line breaks. Do not add commentary.`,
+      system: `You translate website content of an Uzbek school from Uzbek into ${NAMES[locale]}. Input is a JSON array of strings. Return ONLY a JSON array of the same length with the translations, same order. Keep names of people, numbers, emails, phone numbers and URLs unchanged. The school name \"Törtköl tuman ixtisoslaştirilgan maktabi\" (also written To‘rtko‘l tuman ixtisoslashtirilgan maktabi) must always be written exactly as \"Törtköl tuman ixtisoslaştirilgan maktabi\", never translated or transliterated. Keep line breaks. Do not add commentary.`,
       messages: [{ role: 'user', content: JSON.stringify(texts) }],
     }),
   });
@@ -145,20 +146,23 @@ async function translateMany(texts: string[], locale: TargetLocale): Promise<(st
 
 /** Matnlarni locale ga tarjima qiladi. Topilmaganlari null (asl matn ko‘rsatiladi, keshlanmaydi). */
 export async function translateTexts(texts: string[], locale: TargetLocale): Promise<(string | null)[]> {
+  // Yangi alifbodagi matn ham eski yozuvga keltiriladi: kesh kaliti bir xil, tarjimonlar yaxshiroq tushunadi
+  texts = texts.map((t) => toOldAlphabet(t));
   const hashes = texts.map((t) => keyOf(t, locale));
-  const result: (string | null)[] = texts.map((_, i) => mem.get(hashes[i]) ?? null);
+  const result: (string | null)[] = texts.map((_, i) => { const m = mem.get(hashes[i]); return m ? fixSchoolName(m) : null; });
   const missingIdx = result.map((r, i) => (r === null ? i : -1)).filter((i) => i >= 0);
   if (!missingIdx.length) return result;
 
   const cached = await readCache(missingIdx.map((i) => hashes[i]));
   const toDo: number[] = [];
   for (const i of missingIdx) {
-    const c = cached.get(hashes[i]);
+    const c0 = cached.get(hashes[i]);
+    const c = c0 === undefined ? undefined : fixSchoolName(c0);
     if (c !== undefined) { result[i] = c; mem.set(hashes[i], c); } else toDo.push(i);
   }
   if (!toDo.length) return result;
 
-  const fresh = await translateMany(toDo.map((i) => texts[i]), locale);
+  const fresh = (await translateMany(toDo.map((i) => texts[i]), locale)).map((v) => (v ? fixSchoolName(v) : v));
   const save: { hash: string; locale: string; text: string }[] = [];
   toDo.forEach((i, k) => {
     const v = fresh[k];

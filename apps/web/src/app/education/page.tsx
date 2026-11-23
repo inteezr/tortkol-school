@@ -9,25 +9,25 @@ export default function TalimPage() {
 
   const programs = [
     {
-      title: "Chuqurlashtirilgan o'quv dasturi",
-      desc: "Davlat ta'lim standartlari asosida tuzilgan, xalqaro ilg'or tajribalarga moslashtirilgan o'quv rejalari.",
+      title: "Çuqurlaştirilgan öquv dasturi",
+      desc: "Davlat ta'lim standartlari asosida tuzilgan, xalqaro ilğor tajribalarga moslaştirilgan öquv rejalari.",
       icon: BookOpen,
       color: "blue",
     },
     {
-      title: "Olimpiada to'garaklari",
-      desc: "Xalqaro va respublika miqyosidagi fan olimpiadalariga tayyorlovchi ixtisoslashgan maxsus darslar.",
+      title: "Olimpiada tögaraklari",
+      desc: "Xalqaro va respublika miqyosidagi fan olimpiadalariga tayyorlovçi ixtisoslaşgan maxsus darslar.",
       icon: Award,
       color: "emerald",
     },
     {
-      title: "Amaliy laboratoriya mashg'ulotlari",
-      desc: "Zamonaviy fizika, kimyo va biologiya laboratoriyalarida real tajribalar o'tkazish imkoniyati.",
+      title: "Amaliy laboratoriya maşğulotlari",
+      desc: "Zamonaviy fizika, kimyo va biologiya laboratoriyalarida real tajribalar ötkaziş imkoniyati.",
       icon: Compass,
       color: "purple",
     },
     {
-      title: "Chet tillarini chuqur o'rganish",
+      title: "Çet tillarini çuqur örganiş",
       desc: "Ingliz tili darslari xalqaro standartlar asosida olib borilib, IELTS va CEFR sertifikatlariga tayyorlanadi.",
       icon: GraduationCap,
       color: "amber",
@@ -42,7 +42,7 @@ export default function TalimPage() {
             {tr("Ta'lim jarayoni va metodikasi")}
           </h1>
           <p className="mt-4 text-base sm:text-lg text-slate-600">
-            {tr("To'rtko'l tuman ixtisoslashtirilgan maktabida ta'lim sifati, o'quv standartlari va o'quvchilar imkoniyatlari.")}
+            {tr("Törtköl tuman ixtisoslaştirilgan maktabida ta'lim sifati, öquv standartlari va öquvçilar imkoniyatlari.")}
           </p>
         </div>
 

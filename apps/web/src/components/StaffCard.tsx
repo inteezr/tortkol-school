@@ -1,10 +1,11 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { Pencil, Trash2 } from 'lucide-react';
 
 // teachers.png dizayni: pastel fon, rasm ustida yorliq, pastda oq matn bloki
-export const PASTELS = ['bg-[#E0F0F2]', 'bg-[#FBE5DC]', 'bg-[#E1E6F2]'];
+export const PASTELS = ['bg-[#DCEBFA]', 'bg-[#E0EEFB]', 'bg-[#CDE0F5]'];
 export const pastel = (i: number) => PASTELS[i % PASTELS.length];
 
 export const getInitials = (n?: string) =>
@@ -37,7 +38,7 @@ export function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
     <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight inline-block relative">
       {children}
-      <span className="absolute left-0 right-0 -bottom-1.5 h-[3px] rounded-full bg-gradient-to-r from-[#0284C7] to-[#7DD3FC]" />
+      <span className="absolute left-0 right-0 -bottom-1.5 h-[3px] rounded-full bg-gradient-to-r from-[#052659] to-[#5483B3]" />
     </h2>
   );
 }
@@ -50,27 +51,24 @@ type CardProps = {
   photoUrl?: string | null;
   meta?: React.ReactNode;
   onClick?: () => void;
+  /** Berilsa karta haqiqiy havola bo'ladi (yangi oynada ochish, ulashish mumkin) */
+  href?: string;
   onEdit?: () => void;
   onDelete?: () => void;
 };
 
-export function StaffCard({ index, name, chip, text, photoUrl, meta, onClick, onEdit, onDelete }: CardProps) {
-  const interactive = !!onClick;
-  return (
-    <div
-      role={interactive ? 'button' : undefined}
-      tabIndex={interactive ? 0 : undefined}
-      onClick={onClick}
-      onKeyDown={interactive ? (e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), onClick!()) : undefined}
-      className={`group relative bg-white rounded-2xl border border-slate-100 shadow-[0_2px_12px_rgba(15,23,42,0.05)] overflow-hidden flex flex-col text-left transition-all ${interactive ? 'cursor-pointer hover:shadow-xl hover:shadow-sky-500/10 hover:-translate-y-1' : ''}`}
-    >
+export function StaffCard({ index, name, chip, text, photoUrl, meta, onClick, href, onEdit, onDelete }: CardProps) {
+  const interactive = !!onClick || !!href;
+  const cls = `group relative bg-white rounded-2xl border border-slate-100 shadow-[0_2px_12px_rgba(2,16,36,0.05)] overflow-hidden flex flex-col text-left transition-all ${interactive ? 'cursor-pointer hover:shadow-xl hover:shadow-sky-500/10 hover:-translate-y-1' : ''}`;
+  const body = (
+    <>
       <div className="relative">
         <StaffPhoto url={photoUrl} name={name} index={index} className="aspect-[4/4.4] w-full" />
         {chip && <Chip>{chip}</Chip>}
         {(onEdit || onDelete) && (
           <div className="absolute top-3 right-3 flex gap-1" onClick={(e) => e.stopPropagation()}>
-            {onEdit && <button onClick={onEdit} title="Tahrirlash" className="p-2 rounded-lg bg-white/95 text-slate-600 hover:text-[#0047AB] shadow-sm"><Pencil className="w-4 h-4" /></button>}
-            {onDelete && <button onClick={onDelete} title="O‘chirish" className="p-2 rounded-lg bg-white/95 text-slate-600 hover:text-rose-600 shadow-sm"><Trash2 className="w-4 h-4" /></button>}
+            {onEdit && <button onClick={onEdit} title="Tahrirlaş" className="p-2 rounded-lg bg-white/95 text-slate-600 hover:text-[#052659] shadow-sm"><Pencil className="w-4 h-4" /></button>}
+            {onDelete && <button onClick={onDelete} title="Öçiriş" className="p-2 rounded-lg bg-white/95 text-slate-600 hover:text-rose-600 shadow-sm"><Trash2 className="w-4 h-4" /></button>}
           </div>
         )}
       </div>
@@ -79,6 +77,18 @@ export function StaffCard({ index, name, chip, text, photoUrl, meta, onClick, on
         {text && <p className="mt-2 text-sm text-slate-500 leading-relaxed line-clamp-2">{text}</p>}
         {meta && <div className="mt-2">{meta}</div>}
       </div>
+    </>
+  );
+  if (href) return <Link href={href} className={cls}>{body}</Link>;
+  return (
+    <div
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onClick={onClick}
+      onKeyDown={onClick ? (e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), onClick()) : undefined}
+      className={cls}
+    >
+      {body}
     </div>
   );
 }

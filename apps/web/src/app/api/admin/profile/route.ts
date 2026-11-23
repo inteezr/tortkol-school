@@ -6,17 +6,17 @@ import { updateProfile } from '@/lib/admin-store';
 
 const schema = z.object({
   currentPassword: z.string().min(1, 'Joriy parolni kiriting'),
-  newUsername: z.string().trim().min(3, 'Login kamida 3 belgi').max(50).regex(/^[a-zA-Z0-9_.-]+$/, 'Loginda faqat lotin harf, raqam, _ . - bo\'lishi mumkin').optional(),
+  newUsername: z.string().trim().min(3, 'Login kamida 3 belgi').max(50).regex(/^[a-zA-Z0-9_.-]+$/, 'Loginda faqat lotin harf, raqam, _ . - bölişi mumkin').optional(),
   newPassword: z.string().min(8, 'Yangi parol kamida 8 belgi').max(100).optional(),
 });
 
 export async function PATCH(req: NextRequest) {
   const admin = await getAdmin();
-  if (!admin) return NextResponse.json({ error: "Ruxsat yo'q" }, { status: 401 });
+  if (!admin) return NextResponse.json({ error: "Ruxsat yöq" }, { status: 401 });
   try {
     const body = schema.parse(await req.json());
     if (!body.newUsername && !body.newPassword) {
-      return NextResponse.json({ error: "O'zgartirish uchun yangi login yoki parol kiriting" }, { status: 400 });
+      return NextResponse.json({ error: "Özgartiriş uçun yangi login yoki parol kiriting" }, { status: 400 });
     }
     const username = await updateProfile({ username: admin.user }, body.currentPassword, body.newUsername, body.newPassword);
     (await cookies()).set('admin_session', createSessionToken(username), {

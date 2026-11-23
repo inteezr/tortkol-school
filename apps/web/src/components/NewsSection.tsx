@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { postCategory, newsTagHref } from '../lib/post-categories';
 import { Reveal } from './Reveal';
 import { useLanguage } from '../lib/LanguageContext';
 import { loadJson } from '../lib/api-store';
@@ -9,6 +11,7 @@ import { ArrowRight, Calendar, ArrowUpRight } from 'lucide-react';
 
 export const NewsSection: React.FC = () => {
   const { t, tr } = useLanguage();
+  const router = useRouter();
   const [newsItems, setNewsItems] = useState<any[]>([]);
 
   useEffect(() => {
@@ -20,7 +23,7 @@ export const NewsSection: React.FC = () => {
             title: p.title,
             excerpt: p.excerpt,
             date: p.published_at ? p.published_at.slice(0, 10) : '',
-            category: p.categories?.name || p.category || '',
+            category: postCategory(p),
             imageUrl: p.cover_image || '',
           })));
         }
@@ -40,15 +43,15 @@ export const NewsSection: React.FC = () => {
               {t.news.title}
             </h2>
             <p className="mt-2 text-sm sm:text-base text-slate-600 font-normal">
-              {tr("Maktabimizda bo'lib o'tayotgan eng so'nggi tadbirlar, g'alabalar va e'lonlar.")}
+              {tr("Maktabimizda bölib ötayotgan eng sönggi tadbirlar, ğalabalar va e'lonlar.")}
             </p>
           </div>
 
           <Link
             href="/news"
-            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full border border-sky-200 bg-sky-50 hover:bg-[#0284C7] hover:text-white text-xs font-bold text-[#0284C7] shadow-xs active:scale-95 transition-all self-start md:self-auto"
+            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full border border-sky-200 bg-sky-50 hover:bg-[#052659] hover:text-white text-xs font-bold text-[#052659] shadow-xs active:scale-95 transition-all self-start md:self-auto"
           >
-            <span>{tr("Barcha yangiliklar")}</span>
+            <span>{tr("Barça yangiliklar")}</span>
             <ArrowRight className="w-4 h-4" />
           </Link>
         </Reveal>
@@ -56,7 +59,7 @@ export const NewsSection: React.FC = () => {
         {/* 3 ta Yangilik kartasi */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {newsItems.length === 0 && (
-            <p className="col-span-full text-center text-slate-500 py-10">{tr("Hozircha yangiliklar yo'q.")}</p>
+            <p className="col-span-full text-center text-slate-500 py-10">{tr("Hozirça yangiliklar yöq.")}</p>
           )}
           {newsItems.map((item, i) => (
             <Reveal key={item.id} delay={i * 0.1}>
@@ -73,8 +76,8 @@ export const NewsSection: React.FC = () => {
                 />)}
 
                 {/* Sana nishoni */}
-                <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-full text-xs font-bold text-[#0284C7] shadow-md flex items-center gap-1.5 border border-sky-100">
-                  <Calendar className="w-3.5 h-3.5 text-[#0284C7]" />
+                <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-full text-xs font-bold text-[#052659] shadow-md flex items-center gap-1.5 border border-sky-100">
+                  <Calendar className="w-3.5 h-3.5 text-[#052659]" />
                   <span>{item.date}</span>
                 </div>
               </div>
@@ -82,11 +85,19 @@ export const NewsSection: React.FC = () => {
               {/* Matn bloki */}
               <div className="p-6 sm:p-7 flex flex-col flex-1 justify-between">
                 <div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-[#0284C7] bg-sky-50 border border-sky-100 px-3 py-1 rounded-xl inline-block mb-3">
-                    {tr(item.category)}
-                  </span>
+                  {item.category && (
+                    // Karta o'zi havola: ichida <a> bo'lolmaydi, shuning uchun tugma + router
+                    <button
+                      type="button"
+                      title={tr('Şu turkumdagi postlar')}
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(newsTagHref(item.category.slug)); }}
+                      className="text-xs font-bold tracking-wider text-[#052659] bg-sky-50 border border-sky-100 px-3 py-1 rounded-xl inline-block mb-3 hover:bg-[#052659] hover:text-white transition-colors"
+                    >
+                      {tr(item.category.label)}
+                    </button>
+                  )}
 
-                  <h3 className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-[#0284C7] transition-colors line-clamp-2 leading-snug">
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-[#052659] transition-colors line-clamp-2 leading-snug">
                     {tr(item.title)}
                   </h3>
 
@@ -96,9 +107,9 @@ export const NewsSection: React.FC = () => {
                 </div>
 
                 {/* Read more havolasi */}
-                <div className="mt-6 pt-4 border-t border-sky-100 flex items-center text-xs font-extrabold text-[#0284C7] uppercase tracking-wider group-hover:gap-2 transition-all">
-                  <span>{tr("BATAFSIL O'QISH")}</span>
-                  <ArrowRight className="w-3.5 h-3.5 ml-1.5 text-[#0284C7]" />
+                <div className="mt-6 pt-4 border-t border-sky-100 flex items-center text-xs font-extrabold text-[#052659] uppercase tracking-wider group-hover:gap-2 transition-all">
+                  <span>{tr("BATAFSIL ÖQIŞ")}</span>
+                  <ArrowRight className="w-3.5 h-3.5 ml-1.5 text-[#052659]" />
                 </div>
               </div>
             </Link>
